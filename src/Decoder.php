@@ -55,12 +55,10 @@ class Decoder
             case 0:
                 return null;
             case 1:
-                return $this->getFromString($rawSpfRecords[0]);
+                return $this->getRecordFromTXT($rawSpfRecords[0]);
             default:
                 throw new Exception\MultipleSPFRecordsException($domain, $rawSpfRecords);
         }
-
-        return $this->getRecordFromTXT($rawSpfRecords[0]);
     }
 
     /**
