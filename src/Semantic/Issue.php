@@ -54,6 +54,13 @@ class Issue
     public const CODE_DUPLICATED_MODIFIER = 6;
 
     /**
+     * Semantic warning code: unknown modifier specified.
+     *
+     * @var int
+     */
+    public const UNKNOWN_MODIFIER = 7;
+
+    /**
      * Issue level: notice (can be ignored).
      *
      * @var int

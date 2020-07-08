@@ -30,7 +30,8 @@ class SemanticValidator
             $this->checkAllAndRedirect($record),
             $this->checkNoPtr($record),
             $this->checkModifiersPosition($record),
-            $this->checkModifiersUniqueness($record)
+            $this->checkModifiersUniqueness($record),
+            $this->checkUnknownModifiers($record)
         );
     }
 
@@ -218,6 +219,23 @@ class SemanticValidator
                     Issue::CODE_DUPLICATED_MODIFIER,
                     "The '{$name}' modifier is present more than once ({$count} times)",
                     Issue::LEVEL_FATAL
+                );
+            }
+        }
+
+        return $result;
+    }
+
+    protected function checkUnknownModifiers(Record $record): array
+    {
+        $result = [];
+        foreach ($record->getModifiers() as $modifier) {
+            if ($modifier instanceof Modifier\UnknownModifier) {
+                $result[] = new Issue(
+                    $record,
+                    Issue::UNKNOWN_MODIFIER,
+                    "The '{$modifier}' modifier is unknown",
+                    Issue::LEVEL_NOTICE
                 );
             }
         }
