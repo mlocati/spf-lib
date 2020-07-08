@@ -11,6 +11,14 @@ This PHP library allows you to:
 
 The implementation is based on [RFC 7208](https://tools.ietf.org/html/rfc7208).
 
+## Installation
+
+You can install this library with Composer:
+
+```sh
+composer require mlocati/spf-lib
+```
+
 ## Usage
 
 ### Retrieving the SPF record from a domain name
