@@ -1,0 +1,26 @@
+name: Check Coding Style
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  php:
+    name: PHP
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.2'
+          extensions: 'mbstring, openssl, zip'
+          tools: 'composer:v1'
+      - name: Install dependencies
+        run: composer install --no-progress --no-suggest --optimize-autoloader --ansi --no-interaction
+      - name: Check
+        run: composer run-script phpcs -- --dry-run --using-cache=no --diff --diff-format=udiff --show-progress=none --verbose --no-interaction --ansi .

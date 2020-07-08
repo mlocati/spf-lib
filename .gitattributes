@@ -1,0 +1,4 @@
+/test/ export-ignore
+/.* export-ignore
+/*.xml export-ignore
+/*.yml export-ignore
