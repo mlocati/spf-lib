@@ -116,8 +116,8 @@ class DecoderTest extends TestCase
      */
     public function testValidTerm(string $rawTerm, Term $expected, ?string $expectedStringRepresentation = null): void
     {
-        $factory = new Decoder();
-        $actualRecord = $factory->getRecordFromTXT(Record::PREFIX . " {$rawTerm}");
+        $factory = new Decoder(new FakeDnsResoler([Record::PREFIX . " {$rawTerm}"]));
+        $actualRecord = $factory->getRecordFromDomain('example.org');
         $actualTerm = $actualRecord->getTerms()[0];
         $this->assertEquals($expected, $actualTerm);
         if ($expectedStringRepresentation === null) {
