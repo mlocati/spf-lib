@@ -106,6 +106,12 @@ class SemanticValidatorTest extends TestCase
                     Issue::CODE_DUPLICATED_MODIFIER,
                 ],
             ],
+            [
+                'v=spf1 mx include=foo',
+                [
+                    Issue::UNKNOWN_MODIFIER,
+                ],
+            ],
         ];
     }
 
