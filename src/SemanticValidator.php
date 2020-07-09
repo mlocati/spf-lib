@@ -18,13 +18,14 @@ class SemanticValidator
     /**
      * Get all the semantical warnings of an SPF record.
      *
-     * @param \SPFLib\Record $record
+     * @param \SPFLib\Record $record the record to be checked
+     * @param int|null $minimumLevel the minimum level of the issues (the value of one of the Issue::LEVEL_... constants)
      *
      * @return \SPFLib\Semantic\Issue[] The warnings
      */
-    public function validate(Record $record): array
+    public function validate(Record $record, ?int $minimumLevel = null): array
     {
-        return array_merge(
+        $issues = array_merge(
             $this->checkMaxDNSLookups($record),
             $this->checkAllIsLastMechanism($record),
             $this->checkAllAndRedirect($record),
@@ -33,6 +34,18 @@ class SemanticValidator
             $this->checkModifiersUniqueness($record),
             $this->checkUnknownModifiers($record)
         );
+        if ($minimumLevel !== null) {
+            $issues = array_values(
+                array_filter(
+                    $issues,
+                    static function (Issue $issue) use ($minimumLevel): bool {
+                        return $issue->getLevel() >= $minimumLevel;
+                    }
+                )
+            );
+        }
+
+        return $issues;
     }
 
     /**
