@@ -94,6 +94,27 @@ class SemanticValidatorTest extends TestCase
                 ],
             ],
             [
+                'v=spf1 redirect=foo.bar all',
+                [
+                    Issue::CODE_ALL_AND_REDIRECT,
+                    Issue::CODE_MODIFIER_NOT_AFTER_MECHANISMS,
+                ],
+                Issue::LEVEL_NOTICE,
+            ],
+            [
+                'v=spf1 redirect=foo.bar all',
+                [
+                    Issue::CODE_ALL_AND_REDIRECT,
+                ],
+                Issue::LEVEL_WARNING,
+            ],
+            [
+                'v=spf1 redirect=foo.bar all',
+                [
+                ],
+                Issue::LEVEL_FATAL,
+            ],
+            [
                 'v=spf1 mx redirect=foo.bar exp=baz redirect=qux',
                 [
                     Issue::CODE_DUPLICATED_MODIFIER,
@@ -107,10 +128,73 @@ class SemanticValidatorTest extends TestCase
                 ],
             ],
             [
+                'v=spf1 mx redirect=foo.bar exp=baz redirect=qux exp=foo exp=bar',
+                [
+                    Issue::CODE_DUPLICATED_MODIFIER,
+                    Issue::CODE_DUPLICATED_MODIFIER,
+                ],
+                Issue::LEVEL_NOTICE,
+            ],
+            [
+                'v=spf1 mx redirect=foo.bar exp=baz redirect=qux exp=foo exp=bar',
+                [
+                    Issue::CODE_DUPLICATED_MODIFIER,
+                    Issue::CODE_DUPLICATED_MODIFIER,
+                ],
+                Issue::LEVEL_WARNING,
+            ],
+            [
+                'v=spf1 mx redirect=foo.bar exp=baz redirect=qux exp=foo exp=bar',
+                [
+                    Issue::CODE_DUPLICATED_MODIFIER,
+                    Issue::CODE_DUPLICATED_MODIFIER,
+                ],
+                Issue::LEVEL_FATAL,
+            ],
+            [
                 'v=spf1 mx include=foo',
                 [
                     Issue::UNKNOWN_MODIFIER,
                 ],
+            ],
+            [
+                'v=spf1 all redirect=example1.org redirect=example2.org ptr:foo.bar mx include=example3.org',
+                [
+                    Issue::CODE_ALL_NOT_LAST_MECHANISM,
+                    Issue::CODE_ALL_AND_REDIRECT,
+                    Issue::CODE_SHOULD_AVOID_PTR,
+                    Issue::CODE_MODIFIER_NOT_AFTER_MECHANISMS,
+                    Issue::CODE_DUPLICATED_MODIFIER,
+                    Issue::UNKNOWN_MODIFIER,
+                ],
+            ],
+            [
+                'v=spf1 all redirect=example1.org redirect=example2.org ptr:foo.bar mx include=example3.org',
+                [
+                    Issue::CODE_ALL_NOT_LAST_MECHANISM,
+                    Issue::CODE_ALL_AND_REDIRECT,
+                    Issue::CODE_SHOULD_AVOID_PTR,
+                    Issue::CODE_MODIFIER_NOT_AFTER_MECHANISMS,
+                    Issue::CODE_DUPLICATED_MODIFIER,
+                    Issue::UNKNOWN_MODIFIER,
+                ],
+                Issue::LEVEL_NOTICE,
+            ],
+            [
+                'v=spf1 all redirect=example1.org redirect=example2.org ptr:foo.bar mx include=example3.org',
+                [
+                    Issue::CODE_ALL_NOT_LAST_MECHANISM,
+                    Issue::CODE_ALL_AND_REDIRECT,
+                    Issue::CODE_DUPLICATED_MODIFIER,
+                ],
+                Issue::LEVEL_WARNING,
+            ],
+            [
+                'v=spf1 all redirect=example1.org redirect=example2.org ptr:foo.bar mx include=example3.org',
+                [
+                    Issue::CODE_DUPLICATED_MODIFIER,
+                ],
+                Issue::LEVEL_FATAL,
             ],
         ];
     }
@@ -118,10 +202,10 @@ class SemanticValidatorTest extends TestCase
     /**
      * @dataProvider provideWarningsCases
      */
-    public function testWarnings(string $txtRecord, array $warningCodes): void
+    public function testWarnings(string $txtRecord, array $warningCodes, ?int $minimumLevel = null): void
     {
         $record = self::$decoder->getRecordFromTXT($txtRecord);
-        $warnings = self::$validator->validate($record);
+        $warnings = self::$validator->validate($record, $minimumLevel);
         $this->assertSameSize($warningCodes, $warnings);
         foreach ($warnings as $warning) {
             $this->assertInstanceOf(Issue::class, $warning);
