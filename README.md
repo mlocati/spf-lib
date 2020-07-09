@@ -7,7 +7,6 @@ This PHP library allows you to:
 - get the SPF record from a domain name
 - decode and validate the SPF record
 - create the value of a TXT record
-- validate an IP address against an SPF record
 
 The implementation is based on [RFC 7208](https://tools.ietf.org/html/rfc7208).
 
@@ -23,6 +22,10 @@ composer require mlocati/spf-lib
 
 ### Retrieving the SPF record from a domain name
 
+An SPF record is composed by zero or more terms. Every term can be a mechanism or a modifier.
+
+This library allows you to inspect them:
+
 ```php
 
 $decoder = new \SPFLib\Decoder();
@@ -37,7 +40,25 @@ if ($record === null) {
     // SPF record not found for example.com
     return;
 }
+// List all terms (that is, mechanisms and modifiers)
+foreach ($record->getTerms() as $term) {
+    // do your stuff
+}
+// List all mechanisms
+foreach ($record->getMechanisms() as $mechanism) {
+    // do your stuff
+}
+// List all modifiers
+foreach ($record->getModifiers() as $modifiers) {
+    // do your stuff
+}
 ```
+
+Please note that:
+
+- all [mechanisms](https://github.com/mlocati/spf-lib/tree/master/src/Term/Mechanism) extend the [`SPFLib\Term\Mechanism`](https://github.com/mlocati/spf-lib/blob/master/src/Term/Mechanism.php) abstract class.
+- all [modifiers](https://github.com/mlocati/spf-lib/tree/master/src/Term/Modifier) extend the [`SPFLib\Term\Modifier`](https://github.com/mlocati/spf-lib/blob/master/src/Term/Modifier.php) abstract class.
+- both mechanisms and modifiers implement the [`SPFLib\Term`](https://github.com/mlocati/spf-lib/blob/master/src/Term.php) interface.
 
 ### Decoding the SPF record from the value of a TXT DNS record
 
@@ -96,6 +117,8 @@ Output:
 [fatal] The 'redirect' modifier is present more than once (2 times)
 [notice] The 'include=example3.org' modifier is unknown
 ```
+
+Please note that every item in the array returned by the `validate` method is an instance of the [`SPFLib\Semantic\Issue`](https://github.com/mlocati/spf-lib/blob/master/src/Semantic/Issue.php) class.
 
 
 ## Do you want to really say thank you?
