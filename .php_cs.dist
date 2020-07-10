@@ -7,6 +7,31 @@ if (!class_exists('PhpCsFixer\Config', true)) {
     die(16);
 }
 
+$minimumPHPVersion = (function() {
+    $composerJson = __DIR__ . '/composer.json';
+    if (!is_file($composerJson)) {
+        throw new RuntimeException('Missing composer.json file');
+    }
+    set_error_handler(static function(){}, -1);
+    $composer = json_decode(file_get_contents($composerJson), true);
+    restore_error_handler();
+    if (!is_array($composer)) {
+        throw new RuntimeException('Failed to read composer.json');
+    }
+    if (!isset($composer['require'])) {
+        throw new RuntimeException('"require" section is missing in composer.json');
+    }
+    if (!isset($composer['require']['php'])) {
+        throw new RuntimeException('"php" key is missing in the "require" section of composer.json');
+    }
+    $matches = null;
+    if (!preg_match('/^\s*(?:\^|>=)\s*(\d+(?:\.\d+))/', $composer['require']['php'], $matches)) {
+        throw new RuntimeException('Unrecognized value (' . $composer['require']['php'] . ') of the "php" key of the "require" section of composer.json');
+    }
+
+    return $matches[1];
+})();
+
 return PhpCsFixer\Config::create()
     ->setCacheFile(__DIR__ . '/.php_cs.cache')
     ->setRiskyAllowed(true)
@@ -19,7 +44,7 @@ return PhpCsFixer\Config::create()
 
         // PHP arrays should be declared using the configured syntax.
         'array_syntax' => [
-            'syntax' => 'short',
+            'syntax' => version_compare($minimumPHPVersion, '5.4', '>=') ? 'short' : 'long',
         ],
 
         // Binary operators should be surrounded by space as configured.
@@ -55,7 +80,7 @@ return PhpCsFixer\Config::create()
         'combine_consecutive_unsets' => true,
 
         // Replace multiple nested calls of `dirname` by only one call with second `$level` parameter. Requires PHP >= 7.0.
-        'combine_nested_dirname' => true,
+        'combine_nested_dirname' => version_compare($minimumPHPVersion, '7.0', '>='),
 
         // Remove extra spaces in a nullable typehint.
         'compact_nullable_typehint' => true,
@@ -70,10 +95,10 @@ return PhpCsFixer\Config::create()
         'declare_equal_normalize' => true,
 
         // Force strict types declaration in all files. Requires PHP >= 7.0.
-        'declare_strict_types' => true,
+        'declare_strict_types' => version_compare($minimumPHPVersion, '7.0', '>='),
 
         // Replaces `dirname(__FILE__)` expression with equivalent `__DIR__` constant.
-        'dir_constant' => true,
+        'dir_constant' => version_compare($minimumPHPVersion, '5.3', '>='),
 
         // The keyword `elseif` should be used instead of `else if` so that all control keywords look like single words.
         'elseif' => true,
@@ -85,7 +110,7 @@ return PhpCsFixer\Config::create()
         'ereg_to_preg' => true,
 
         // Add curly braces to indirect variables to make them clear to understand. Requires PHP >= 7.0.
-        'explicit_indirect_variable' => true,
+        'explicit_indirect_variable' => version_compare($minimumPHPVersion, '7.0', '>='),
 
         // Converts implicit variables into explicit ones in double-quoted strings or heredoc syntax.
         'explicit_string_variable' => true,
@@ -127,7 +152,7 @@ return PhpCsFixer\Config::create()
         'linebreak_after_opening_tag' => true,
 
         // List (`array` destructuring) assignment should be declared using the configured syntax. Requires PHP >= 7.1.
-        'list_syntax' => true,
+        'list_syntax' => ['syntax' => version_compare($minimumPHPVersion, '7.1', '>=') ? 'short' : 'long'],
 
         // Cast should be written in lower case.
         'lowercase_cast' => true,
@@ -283,7 +308,7 @@ return PhpCsFixer\Config::create()
         'normalize_index_brace' => true,
 
         // Adds or removes `?` before type declarations for parameters with a default `null` value.
-        'nullable_type_declaration_for_default_null_value' => true,
+        'nullable_type_declaration_for_default_null_value' => ['use_nullable_type_declaration' => version_compare($minimumPHPVersion, '7.1', '>=')],
 
         // There should not be space before or after object `T_OBJECT_OPERATOR` `->`.
         'object_operator_without_whitespace' => true,
@@ -355,7 +380,7 @@ return PhpCsFixer\Config::create()
         'phpdoc_var_annotation_correct_order' => true,
 
         // Converts `pow` to the `**` operator.
-        'pow_to_exponentiation' => true,
+        'pow_to_exponentiation' => version_compare($minimumPHPVersion, '5.6', '>='),
 
         // Class names should match the file name.
         'psr4' => true,
@@ -367,7 +392,7 @@ return PhpCsFixer\Config::create()
         'return_type_declaration' => true,
 
         // Inside class or interface element `self` should be preferred to the class name itself.
-        'self_accessor' => true,
+        'self_accessor' => version_compare($minimumPHPVersion, '5.4', '>='),
 
         // Instructions must be terminated with a semicolon.
         'semicolon_after_instruction' => true,
@@ -418,7 +443,7 @@ return PhpCsFixer\Config::create()
         'switch_case_space' => true,
 
         // Use `null` coalescing operator `??` where possible. Requires PHP >= 7.0.
-        'ternary_to_null_coalescing' => true,
+        'ternary_to_null_coalescing' => version_compare($minimumPHPVersion, '7.0', '>='),
 
         // Standardize spaces around ternary operator.
         'ternary_operator_spaces' => true,
@@ -433,7 +458,7 @@ return PhpCsFixer\Config::create()
         'unary_operator_spaces' => true,
 
         // Visibility MUST be declared on all properties and methods; `abstract` and `final` MUST be declared before the visibility; `static` MUST be declared after the visibility.
-        'visibility_required' => ['elements' => ['const', 'property', 'method']],
+        'visibility_required' => ['elements' => version_compare($minimumPHPVersion, '7.1', '>=') ? ['const', 'property', 'method'] : ['property', 'method']],
 
         // In array declaration, there MUST be a whitespace after each comma.
         'whitespace_after_comma_in_array' => true,
@@ -447,6 +472,8 @@ return PhpCsFixer\Config::create()
                 __DIR__ . '/src',
                 __DIR__ . '/test',
             ])
-            ->append([__DIR__ . '/.php_cs.dist'])
+            ->append([
+                __DIR__ . '/p-lib.php',
+            ])
     )
 ;
