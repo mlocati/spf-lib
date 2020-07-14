@@ -1,4 +1,6 @@
 [![Tests](https://github.com/mlocati/spf-lib/workflows/Tests/badge.svg)](https://github.com/mlocati/spf-lib/actions?query=workflow%3A%22Tests%22)
+[![Code Coverage](https://codecov.io/gh/mlocati/spf-lib/branch/master/graph/badge.svg)](https://codecov.io/gh/mlocati/spf-lib)
+
 
 # SPF (Sender Policy Framework) Library
 
