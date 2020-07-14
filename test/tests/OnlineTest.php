@@ -7,6 +7,7 @@ use SPFLib\Check\Environment;
 use SPFLib\Check\Result;
 use SPFLib\Checker;
 use SPFLib\Decoder;
+use SPFLib\Exception\DNSResolutionException;
 
 class OnlineTest extends TestCase
 {
@@ -25,7 +26,11 @@ class OnlineTest extends TestCase
     public function testCase(string $domain): void
     {
         $decoder = new Decoder();
-        $record = $decoder->getRecordFromDomain($domain);
+        try {
+            $record = $decoder->getRecordFromDomain($domain);
+        } catch (DNSResolutionException $x) {
+            $this->markTestSkipped($x->getMessage());
+        }
         $this->assertNotNull($record);
         $checker = new Checker();
         $result = $checker->check(new Environment('0.0.0.0', 'john-doe@example.com'));
