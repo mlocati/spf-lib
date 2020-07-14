@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SPFLib\Term\Modifier;
 
+use SPFLib\Macro\MacroString;
 use SPFLib\Term\Modifier;
 
 /**
@@ -19,16 +20,23 @@ class UnknownModifier extends Modifier
     private $name;
 
     /**
-     * @var string
+     * @var \SPFLib\Macro\MacroString
      */
     private $value;
 
     /**
      * Initialize the instance.
+     *
+     * @param \SPFLib\Macro\MacroString|string|null $value
+     *
+     * @throws \SPFLib\Exception\InvalidMacroStringException if $value is a non empty string which does not represent a valid MacroString
      */
-    public function __construct(string $name, string $value)
+    public function __construct(string $name, $value)
     {
         $this->name = $name;
+        if (!$value instanceof MacroString) {
+            $value = MacroString\Decoder::getInstance()->decode($value === null ? '' : $value, MacroString\Decoder::FLAG_ALLOWEMPTY);
+        }
         $this->value = $value;
     }
 
@@ -39,7 +47,12 @@ class UnknownModifier extends Modifier
      */
     public function __toString(): string
     {
-        return $this->getName() . '=' . $this->getValue();
+        return $this->getName() . '=' . (string) $this->getValue();
+    }
+
+    public function __clone()
+    {
+        $this->value = clone $this->getValue();
     }
 
     /**
@@ -55,7 +68,7 @@ class UnknownModifier extends Modifier
     /**
      * Get the name of the modifier (the part after '=').
      */
-    public function getValue(): string
+    public function getValue(): MacroString
     {
         return $this->value;
     }

@@ -49,8 +49,8 @@ class SemanticValidatorTest extends TestCase
     public function testNoWarnings(string $txtRecord): void
     {
         $record = self::$decoder->getRecordFromTXT($txtRecord);
-        $warnings = self::$validator->validate($record);
-        $this->assertSame([], $warnings);
+        $issues = self::$validator->validate($record);
+        $this->assertSame([], $issues);
     }
 
     public function provideWarningsCases(): array
@@ -202,14 +202,19 @@ class SemanticValidatorTest extends TestCase
     /**
      * @dataProvider provideWarningsCases
      */
-    public function testWarnings(string $txtRecord, array $warningCodes, ?int $minimumLevel = null): void
+    public function testWarnings(string $txtRecord, array $issueCodes, ?int $minimumLevel = null): void
     {
         $record = self::$decoder->getRecordFromTXT($txtRecord);
-        $warnings = self::$validator->validate($record, $minimumLevel);
-        $this->assertSameSize($warningCodes, $warnings);
-        foreach ($warnings as $warning) {
-            $this->assertInstanceOf(Issue::class, $warning);
-            $this->assertContains($warning->getCode(), $warningCodes);
+        $issues = self::$validator->validate($record, $minimumLevel);
+        $this->assertSameSize($issueCodes, $issues);
+        foreach ($issues as $issue) {
+            $this->assertInstanceOf(Issue::class, $issue);
+            $this->assertSame($record, $issue->getRecord());
+            $this->assertContains($issue->getCode(), $issueCodes);
+            $this->assertRegExp('/^\[(notice|warning|fatal)\] ./', (string) $issue);
+            if ($minimumLevel === Issue::LEVEL_FATAL) {
+                $this->assertRegExp('/^\[fatal\] ./', (string) $issue);
+            }
         }
     }
 }

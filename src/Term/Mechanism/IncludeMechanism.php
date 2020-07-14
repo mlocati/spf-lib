@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SPFLib\Term\Mechanism;
 
+use SPFLib\Macro\MacroString;
 use SPFLib\Term\Mechanism;
 
 /**
@@ -21,7 +22,7 @@ class IncludeMechanism extends Mechanism
     public const HANDLE = 'include';
 
     /**
-     * @var string
+     * @var \SPFLib\Macro\MacroString
      */
     private $domainSpec;
 
@@ -29,10 +30,16 @@ class IncludeMechanism extends Mechanism
      * Initialize the instance.
      *
      * @param string $qualifier the qualifier of this mechanism (the value of one of the Mechanism::QUALIFIER_... constants)
+     * @param \SPFLib\Macro\MacroString|string $domainSpec
+     *
+     * @throws \SPFLib\Exception\InvalidMacroStringException if $domainSpec is a string which does not represent a valid MacroString, or if it's an empty MacroString instance
      */
-    public function __construct(string $qualifier, string $domainSpec)
+    public function __construct(string $qualifier, $domainSpec)
     {
         parent::__construct($qualifier);
+        if (!$domainSpec instanceof MacroString || $domainSpec->isEmpty()) {
+            $domainSpec = MacroString\Decoder::getInstance()->decode($domainSpec);
+        }
         $this->domainSpec = $domainSpec;
     }
 
@@ -43,7 +50,12 @@ class IncludeMechanism extends Mechanism
      */
     public function __toString(): string
     {
-        return $this->getQualifier(true) . static::HANDLE . ':' . $this->getDomainSpec();
+        return $this->getQualifier(true) . static::HANDLE . ':' . (string) $this->getDomainSpec();
+    }
+
+    public function __clone()
+    {
+        $this->domainSpec = clone $this->getDomainSpec();
     }
 
     /**
@@ -56,7 +68,7 @@ class IncludeMechanism extends Mechanism
         return static::HANDLE;
     }
 
-    public function getDomainSpec(): string
+    public function getDomainSpec(): MacroString
     {
         return $this->domainSpec;
     }

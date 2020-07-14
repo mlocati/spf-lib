@@ -26,6 +26,27 @@ class Record
         return rtrim(static::PREFIX . ' ' . implode(' ', $this->getTerms()), ' ');
     }
 
+    public function __clone()
+    {
+        $terms = $this->getTerms();
+        $this->clearTerms();
+        foreach ($terms as $term) {
+            $this->addTerm(clone $term);
+        }
+    }
+
+    /**
+     * Clear all the terms.
+     *
+     * @return $this
+     */
+    public function clearTerms(): self
+    {
+        $this->terms = [];
+
+        return $this;
+    }
+
     /**
      * @return $this
      */

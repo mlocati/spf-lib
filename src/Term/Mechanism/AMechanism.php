@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SPFLib\Term\Mechanism;
 
+use SPFLib\Macro\MacroString;
 use SPFLib\Term\Mechanism;
 
 /**
@@ -21,7 +22,7 @@ class AMechanism extends Mechanism
     public const HANDLE = 'a';
 
     /**
-     * @var string
+     * @var \SPFLib\Macro\MacroString
      */
     private $domainSpec;
 
@@ -39,10 +40,16 @@ class AMechanism extends Mechanism
      * Initialize the instance.
      *
      * @param string $qualifier the qualifier of this mechanism (the value of one of the Mechanism::QUALIFIER_... constants)
+     * @param \SPFLib\Macro\MacroString|string|null $domainSpec
+     *
+     * @throws \SPFLib\Exception\InvalidMacroStringException if $domainSpec is a non empty string which does not represent a valid MacroString
      */
-    public function __construct(string $qualifier, string $domainSpec = '', ?int $ip4CidrLength = null, ?int $ip6CidrLength = null)
+    public function __construct(string $qualifier, $domainSpec = null, ?int $ip4CidrLength = null, ?int $ip6CidrLength = null)
     {
         parent::__construct($qualifier);
+        if (!$domainSpec instanceof MacroString) {
+            $domainSpec = MacroString\Decoder::getInstance()->decode($domainSpec === null ? '' : $domainSpec, MacroString\Decoder::FLAG_ALLOWEMPTY);
+        }
         $this->domainSpec = $domainSpec;
         $this->ip4CidrLength = $ip4CidrLength === null ? 32 : $ip4CidrLength;
         $this->ip6CidrLength = $ip6CidrLength === null ? 128 : $ip6CidrLength;
@@ -57,8 +64,8 @@ class AMechanism extends Mechanism
     {
         $result = $this->getQualifier(true) . static::HANDLE;
         $domainSpec = $this->getDomainSpec();
-        if ($domainSpec !== '') {
-            $result .= ':' . $this->getDomainSpec();
+        if (!$domainSpec->isEmpty()) {
+            $result .= ':' . (string) $domainSpec;
         }
         $ip4CidrLength = $this->getIp4CidrLength();
         if ($ip4CidrLength !== 32) {
@@ -72,6 +79,11 @@ class AMechanism extends Mechanism
         return $result;
     }
 
+    public function __clone()
+    {
+        $this->domainSpec = clone $this->getDomainSpec();
+    }
+
     /**
      * {@inheritdoc}
      *
@@ -82,7 +94,7 @@ class AMechanism extends Mechanism
         return static::HANDLE;
     }
 
-    public function getDomainSpec(): string
+    public function getDomainSpec(): MacroString
     {
         return $this->domainSpec;
     }

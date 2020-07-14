@@ -8,6 +8,7 @@ use IPLib\Address\IPv4;
 use IPLib\Address\IPv6;
 use SPFLib\DNS\Resolver;
 use SPFLib\DNS\StandardResolver;
+use SPFLib\Macro\MacroString\Decoder as MacroStringDecoder;
 use SPFLib\Term\Mechanism;
 use SPFLib\Term\Modifier;
 
@@ -22,13 +23,20 @@ class Decoder
     private $dnsResolver;
 
     /**
+     * @var \SPFLib\Macro\MacroString\Decoder
+     */
+    private $macroStringDecoder;
+
+    /**
      * Initialize the instance.
      *
      * @param \SPFLib\DNS\Resolver|null $dnsResolver the DNS resolver to be used (we'll use the default one if NULL)
+     * @param \SPFLib\Macro\MacroString\Decoder|null $macroStringDecoder the decoder to be used to decode macro-strings (we'll use the default one if NULL)
      */
-    public function __construct(?Resolver $dnsResolver = null)
+    public function __construct(?Resolver $dnsResolver = null, ?MacroStringDecoder $macroStringDecoder = null)
     {
         $this->dnsResolver = $dnsResolver ?: new StandardResolver();
+        $this->macroStringDecoder = $macroStringDecoder ?: MacroStringDecoder::getInstance();
     }
 
     /**
@@ -37,6 +45,7 @@ class Decoder
      * @throws \SPFLib\Exception\DNSResolutionException in case of DNS resolution errors
      * @throws \SPFLib\Exception\MultipleSPFRecordsException if the domain has more that 1 SPF record
      * @throws \SPFLib\Exception\InvalidTermException if the SPF record contains invalid terms
+     * @throws \SPFLib\Exception\InvalidMacroStringException if the SPF record contains a term with an invalid macro-string
      *
      * @return \SPFLib\Record|null return NULL if no SPF record has been found
      *
@@ -47,7 +56,7 @@ class Decoder
         $rawSpfRecords = [];
         $txtRecords = $this->getDNSResolver()->getTXTRecords($domain);
         foreach ($txtRecords as $txtRecord) {
-            if ($txtRecord === Record::PREFIX || strpos($txtRecord, Record::PREFIX . ' ') === 0) {
+            if (strcasecmp($txtRecord, Record::PREFIX) === 0 || stripos($txtRecord, Record::PREFIX . ' ') === 0) {
                 $rawSpfRecords[] = $txtRecord;
             }
         }
@@ -65,6 +74,7 @@ class Decoder
      * Parse a TXT record and extract the SPF data.
      *
      * @throws \SPFLib\Exception\InvalidTermException if the SPF record contains invalid terms
+     * @throws \SPFLib\Exception\InvalidMacroStringException if the SPF record contains a term with an invalid macro-string
      *
      * @return \SPFLib\Record|null return NULL if $txtRecord is not an SPF record
      *
@@ -74,7 +84,7 @@ class Decoder
     {
         $rawTerms = explode(' ', rtrim($txtRecord, ' '));
         $version = array_shift($rawTerms);
-        if ($version !== Record::PREFIX) {
+        if (strcasecmp($version, Record::PREFIX) !== 0) {
             return null;
         }
         $record = new Record();
@@ -96,66 +106,82 @@ class Decoder
     }
 
     /**
+     * Get the MacroString decoder to be used.
+     */
+    protected function getMacroStringDecoder(): MacroStringDecoder
+    {
+        return $this->macroStringDecoder;
+    }
+
+    /**
      * @throws \SPFLib\Exception\InvalidTermException
+     * @throws \SPFLib\Exception\InvalidMacroStringException
      */
     protected function parseTerm(string $rawTerm): Term
     {
-        $rxQualifier = '(' . implode('|', [
-            preg_quote(Mechanism::QUALIFIER_PASS, '/'),
-            preg_quote(Mechanism::QUALIFIER_FAIL, '/'),
-            preg_quote(Mechanism::QUALIFIER_SOFTFAIL, '/'),
-            preg_quote(Mechanism::QUALIFIER_NEUTRAL, '/'),
-        ]) . ')';
-        $rxMechanism = '(' . implode('|', [
-            preg_quote(Mechanism\AllMechanism::HANDLE, '/'),
-            preg_quote(Mechanism\IncludeMechanism::HANDLE, '/'),
-            preg_quote(Mechanism\AMechanism::HANDLE, '/'),
-            preg_quote(Mechanism\MxMechanism::HANDLE, '/'),
-            preg_quote(Mechanism\PtrMechanism::HANDLE, '/'),
-            preg_quote(Mechanism\Ip4Mechanism::HANDLE, '/'),
-            preg_quote(Mechanism\Ip6Mechanism::HANDLE, '/'),
-            preg_quote(Mechanism\ExistsMechanism::HANDLE, '/'),
-        ]) . ')';
-        $rx = '/^' . implode('', [
-            "(?P<qualifier>{$rxQualifier})?",
-            "(?P<handle>{$rxMechanism})",
-            '(?P<data>[:\/].*)?',
-        ]) . '$/';
-        $matches = null;
-        if (preg_match($rx, $rawTerm, $matches)) {
-            $mechanism = $this->parseMechanism($matches['handle'], $matches['qualifier'], $matches['data'] ?? '');
-            if ($mechanism !== null) {
-                return $mechanism;
-            }
-        } else {
-            $rxUnknownModifierName = '([A-Za-z][\w\-.]*)';
-            $rxModifier = '(' . implode('|', [
-                preg_quote(Modifier\RedirectModifier::HANDLE, '/'),
-                preg_quote(Modifier\ExpModifier::HANDLE, '/'),
-                $rxUnknownModifierName,
+        try {
+            $rxQualifier = '(' . implode('|', [
+                preg_quote(Mechanism::QUALIFIER_PASS, '/'),
+                preg_quote(Mechanism::QUALIFIER_FAIL, '/'),
+                preg_quote(Mechanism::QUALIFIER_SOFTFAIL, '/'),
+                preg_quote(Mechanism::QUALIFIER_NEUTRAL, '/'),
+            ]) . ')';
+            $rxMechanism = '(' . implode('|', [
+                preg_quote(Mechanism\AllMechanism::HANDLE, '/'),
+                preg_quote(Mechanism\IncludeMechanism::HANDLE, '/'),
+                preg_quote(Mechanism\AMechanism::HANDLE, '/'),
+                preg_quote(Mechanism\MxMechanism::HANDLE, '/'),
+                preg_quote(Mechanism\PtrMechanism::HANDLE, '/'),
+                preg_quote(Mechanism\Ip4Mechanism::HANDLE, '/'),
+                preg_quote(Mechanism\Ip6Mechanism::HANDLE, '/'),
+                preg_quote(Mechanism\ExistsMechanism::HANDLE, '/'),
             ]) . ')';
             $rx = '/^' . implode('', [
-                "(?P<handle>{$rxModifier})",
-                '=',
-                '(?P<data>.*)?',
-            ]) . '$/';
+                "(?P<qualifier>{$rxQualifier})?",
+                "(?P<handle>{$rxMechanism})",
+                '(?P<data>[:\/].*)?',
+            ]) . '$/i';
+            $matches = null;
             if (preg_match($rx, $rawTerm, $matches)) {
-                $modifier = $this->parseModifier($matches['handle'], $matches['data'] ?? '');
-                if ($modifier !== null) {
-                    return $modifier;
+                $mechanism = $this->parseMechanism($matches['handle'], $matches['qualifier'], $matches['data'] ?? '');
+                if ($mechanism !== null) {
+                    return $mechanism;
+                }
+            } else {
+                $rxUnknownModifierName = '([A-Za-z][\w\-.]*)';
+                $rxModifier = '(' . implode('|', [
+                    preg_quote(Modifier\RedirectModifier::HANDLE, '/'),
+                    preg_quote(Modifier\ExpModifier::HANDLE, '/'),
+                    $rxUnknownModifierName,
+                ]) . ')';
+                $rx = '/^' . implode('', [
+                    "(?P<handle>{$rxModifier})",
+                    '=',
+                    '(?P<data>.*)?',
+                ]) . '$/i';
+                if (preg_match($rx, $rawTerm, $matches)) {
+                    $modifier = $this->parseModifier($matches['handle'], $matches['data'] ?? '');
+                    if ($modifier !== null) {
+                        return $modifier;
+                    }
                 }
             }
+        } catch (Exception\InvalidMacroStringException $x) {
+            throw $x->setTerm($rawTerm);
         }
 
         throw new Exception\InvalidTermException($rawTerm);
     }
 
+    /**
+     * @throws \SPFLib\Exception\InvalidMacroStringException
+     */
     protected function parseMechanism(string $handle, string $qualifier, string $data): ?Mechanism
     {
         if ($qualifier === '') {
             $qualifier = Mechanism::QUALIFIER_PASS;
         }
-        switch ($handle) {
+        switch (strtolower($handle)) {
             case Mechanism\AllMechanism::HANDLE:
                 return $this->parseAllMechanism($qualifier, $data);
             case Mechanism\IncludeMechanism::HANDLE:
@@ -184,15 +210,24 @@ class Decoder
         return new Mechanism\AllMechanism($qualifier);
     }
 
+    /**
+     * @throws \SPFLib\Exception\InvalidMacroStringException
+     */
     protected function parseIncludeMechanism(string $qualifier, string $data): ?Mechanism\IncludeMechanism
     {
         if ($data === '' || $data[0] !== ':' || $data === ':') {
             return null;
         }
 
-        return new Mechanism\IncludeMechanism($qualifier, substr($data, 1));
+        return new Mechanism\IncludeMechanism(
+            $qualifier,
+            $this->getMacroStringDecoder()->decode(substr($data, 1))
+        );
     }
 
+    /**
+     * @throws \SPFLib\Exception\InvalidMacroStringException
+     */
     protected function parseAMechanism(string $qualifier, string $data): ?Mechanism\AMechanism
     {
         $parsed = $this->extractDomainSpecDualCidr($data);
@@ -203,6 +238,9 @@ class Decoder
         return new Mechanism\AMechanism($qualifier, $parsed[0], $parsed[1], $parsed[2]);
     }
 
+    /**
+     * @throws \SPFLib\Exception\InvalidMacroStringException
+     */
     protected function parseMxMechanism(string $qualifier, string $data): ?Mechanism\MxMechanism
     {
         $parsed = $this->extractDomainSpecDualCidr($data);
@@ -213,14 +251,17 @@ class Decoder
         return new Mechanism\MxMechanism($qualifier, $parsed[0], $parsed[1], $parsed[2]);
     }
 
+    /**
+     * @throws \SPFLib\Exception\InvalidMacroStringException
+     */
     protected function parsePtrMechanism(string $qualifier, string $data): ?Mechanism\PtrMechanism
     {
-        $domainSpec = '';
+        $domainSpec = null;
         if ($data !== '') {
             if ($data[0] !== ':' || $data === ':') {
                 return null;
             }
-            $domainSpec = substr($data, 1);
+            $domainSpec = $this->getMacroStringDecoder()->decode(substr($data, 1));
         }
 
         return new Mechanism\PtrMechanism($qualifier, $domainSpec);
@@ -274,31 +315,41 @@ class Decoder
         return new Mechanism\Ip6Mechanism($qualifier, $ip, $cidr);
     }
 
+    /**
+     * @throws \SPFLib\Exception\InvalidMacroStringException
+     */
     protected function parseExistsMechanism(string $qualifier, string $data): ?Mechanism\ExistsMechanism
     {
         if ($data === '' || $data[0] !== ':' || $data === ':') {
             return null;
         }
 
-        return new Mechanism\ExistsMechanism($qualifier, substr($data, 1));
+        return new Mechanism\ExistsMechanism(
+            $qualifier,
+            $this->getMacroStringDecoder()->decode(substr($data, 1))
+        );
     }
 
+    /**
+     * @throws \SPFLib\Exception\InvalidMacroStringException
+     */
     protected function extractDomainSpecDualCidr(string $data): ?array
     {
-        $domainSpec = '';
+        $domainSpec = null;
         $ip4CidrLength = null;
         $ip6CidrLength = null;
         if ($data !== '') {
             $slashPosition = strpos($data, '/');
             if ($data[0] === ':') {
                 if ($slashPosition === false) {
-                    $domainSpec = substr($data, 1);
+                    $domainSpecString = substr($data, 1);
                 } else {
-                    $domainSpec = substr($data, 1, $slashPosition - 1);
+                    $domainSpecString = substr($data, 1, $slashPosition - 1);
                 }
-                if ($domainSpec === '') {
+                if ($domainSpecString === '') {
                     return null;
                 }
+                $domainSpec = $this->getMacroStringDecoder()->decode($domainSpecString);
             } elseif ($slashPosition !== 0) {
                 return null;
             }
@@ -329,9 +380,12 @@ class Decoder
         return [$domainSpec, $ip4CidrLength, $ip6CidrLength];
     }
 
+    /**
+     * @throws \SPFLib\Exception\InvalidMacroStringException
+     */
     protected function parseModifier(string $handle, string $data): ?Modifier
     {
-        switch ($handle) {
+        switch (strtolower($handle)) {
             case Modifier\RedirectModifier::HANDLE:
                 return $this->parseRedirectModifier($data);
             case Modifier\ExpModifier::HANDLE:
@@ -341,26 +395,42 @@ class Decoder
         }
     }
 
+    /**
+     * @throws \SPFLib\Exception\InvalidMacroStringException
+     */
     protected function parseRedirectModifier(string $data): ?Modifier\RedirectModifier
     {
         if ($data === '') {
             return null;
         }
 
-        return new Modifier\RedirectModifier($data);
+        return new Modifier\RedirectModifier(
+            $this->getMacroStringDecoder()->decode($data)
+        );
     }
 
+    /**
+     * @throws \SPFLib\Exception\InvalidMacroStringException
+     */
     protected function parseExpModifier(string $data): ?Modifier\ExpModifier
     {
         if ($data === '') {
             return null;
         }
 
-        return new Modifier\ExpModifier($data);
+        return new Modifier\ExpModifier(
+            $this->getMacroStringDecoder()->decode($data, MacroStringDecoder::FLAG_EXP)
+        );
     }
 
+    /**
+     * @throws \SPFLib\Exception\InvalidMacroStringException
+     */
     protected function parseUnknownModifier(string $name, string $data): ?Modifier\UnknownModifier
     {
-        return new Modifier\UnknownModifier($name, $data);
+        return new Modifier\UnknownModifier(
+            $name,
+            $this->getMacroStringDecoder()->decode($data)
+        );
     }
 }

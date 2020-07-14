@@ -15,6 +15,7 @@ class RecordTest extends TestCase
     public function testRecord(): void
     {
         $factory = new Decoder();
+        $this->assertNull($factory->getRecordFromTXT('v:spf1 -all'));
         $record = $factory->getRecordFromTXT(Record::PREFIX . ' ~all foo=bar  -ip4:127.0.0.1 +ip6:::1 redirect=example.com');
         $this->assertInstanceOf(Record::class, $record);
         $all = new Mechanism\AllMechanism(Mechanism::QUALIFIER_SOFTFAIL);

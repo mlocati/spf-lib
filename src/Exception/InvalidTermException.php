@@ -16,16 +16,16 @@ class InvalidTermException extends Exception
      *
      * @var string
      */
-    private $term;
+    protected $term;
 
     /**
      * Initialize the instance.
      *
      * @param string $term the term that wasn't recognized
      */
-    public function __construct(string $term)
+    public function __construct(string $term, ?string $message = null)
     {
-        parent::__construct("The SPF record contains an unrecognized term: {$term}");
+        parent::__construct($message === null ? "The SPF record contains an unrecognized term: {$term}" : $message);
         $this->term = $term;
     }
 

@@ -20,14 +20,13 @@ class DecoderTest extends TestCase
         return [
             [[]],
             [['foo', 'bar']],
+            [['v=spf0']],
+            [['v=spf1.1']],
             [['v=spf2']],
             [[' v=spf1']],
             [['v =spf1']],
             [['v = spf1']],
             [['v=spf 1']],
-            [['V=spf1']],
-            [['v=SPF1']],
-            [['V=SPF1']],
         ];
     }
 
@@ -36,7 +35,7 @@ class DecoderTest extends TestCase
      */
     public function testNoResults(array $txtRecords): void
     {
-        $factory = new Decoder(new FakeDnsResoler($txtRecords));
+        $factory = new Decoder(FakeDnsResoler::create()->setFakeTXTRecords(['example.org' => $txtRecords]));
         $record = $factory->getRecordFromDomain('example.org');
         $this->assertNull($record);
     }
@@ -44,8 +43,8 @@ class DecoderTest extends TestCase
     public function testMultipleRecords(): void
     {
         $domain = 'example.org';
-        $records = ['v=spf1', 'v=spf1 mx'];
-        $factory = new Decoder(new FakeDnsResoler(array_merge(['foo'], $records)));
+        $records = ['v=spf1', 'v=spf1 Mx'];
+        $factory = new Decoder(FakeDnsResoler::create()->setFakeTXTRecords(['example.org' => array_merge(['foo'], $records)]));
         $error = null;
         try {
             $factory->getRecordFromDomain($domain);
@@ -61,6 +60,8 @@ class DecoderTest extends TestCase
     {
         return [
             ['all', new Mechanism\AllMechanism(Mechanism::QUALIFIER_PASS)],
+            ['All', new Mechanism\AllMechanism(Mechanism::QUALIFIER_PASS), 'all'],
+            ['ALL', new Mechanism\AllMechanism(Mechanism::QUALIFIER_PASS), 'all'],
             ['+all', new Mechanism\AllMechanism(Mechanism::QUALIFIER_PASS), 'all'],
             ['-all', new Mechanism\AllMechanism(Mechanism::QUALIFIER_FAIL)],
             ['~all', new Mechanism\AllMechanism(Mechanism::QUALIFIER_SOFTFAIL)],
@@ -116,7 +117,7 @@ class DecoderTest extends TestCase
      */
     public function testValidTerm(string $rawTerm, Term $expected, ?string $expectedStringRepresentation = null): void
     {
-        $factory = new Decoder(new FakeDnsResoler([Record::PREFIX . " {$rawTerm}"]));
+        $factory = new Decoder(FakeDnsResoler::create()->setFakeTXTRecords(['example.org' => [Record::PREFIX . " {$rawTerm}"]]));
         $actualRecord = $factory->getRecordFromDomain('example.org');
         $actualTerm = $actualRecord->getTerms()[0];
         $this->assertEquals($expected, $actualTerm);
@@ -129,13 +130,11 @@ class DecoderTest extends TestCase
     public function provideInvalidTerms(): array
     {
         return [
-            ['All'],
             ['all:'],
             ['?all:foo'],
             ['include'],
             ['include:'],
             ['include/foo.bar'],
-            ['A'],
             ['a:'],
             ['a:/1'],
             ['a/33'],
@@ -147,7 +146,6 @@ class DecoderTest extends TestCase
             ['a//129'],
             ['a//1//2'],
             ['a/1:foo.bar'],
-            ['Mx'],
             ['mx/33'],
             ['mx/1/2'],
             ['mx//129'],
@@ -175,6 +173,7 @@ class DecoderTest extends TestCase
             ['exp'],
             ['exp='],
             ['exp:foo.bar'],
+            ['a:/2'],
         ];
     }
 
