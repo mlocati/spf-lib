@@ -37,4 +37,14 @@ jobs:
       - name: Install dependencies
         run: composer install --no-progress --no-suggest --optimize-autoloader --ansi --no-interaction
       - name: Perform tests
+        if: matrix.operating-system != 'ubuntu-latest' || matrix.php-version != '7.2'
         run: composer run-script test -- --verbose --do-not-cache-result
+      - name: Perform tests (with code coverage)
+        if: matrix.operating-system == 'ubuntu-latest' && matrix.php-version == '7.2'
+        run: composer run-script test -- --verbose --do-not-cache-result --coverage-clover code-coverage.xml
+      - name: Upload code coverage
+        if: matrix.operating-system == 'ubuntu-latest' && matrix.php-version == '7.2'
+        uses: codecov/codecov-action@v1
+        with:
+          file: code-coverage.xml
+          flags: unittests
