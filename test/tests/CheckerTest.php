@@ -7,8 +7,8 @@ use SPFLib\Check\Environment;
 use SPFLib\Check\Result;
 use SPFLib\Checker;
 use SPFLib\DNS\Resolver;
-use SPFLib\Test\FakeDnsResoler;
 use SPFLib\Term\Mechanism;
+use SPFLib\Test\FakeDnsResoler;
 
 class CheckerTest extends TestCase
 {
@@ -114,7 +114,7 @@ class CheckerTest extends TestCase
                 Result::CODE_NONE,
                 '',
                 '',
-                '/\bno spf\b.*\brecord.? found/i'
+                '/\bno spf\b.*\brecord.? found/i',
             ],
             // 5
             [
@@ -244,7 +244,7 @@ class CheckerTest extends TestCase
                 Result::CODE_PASS,
                 Mechanism\AMechanism::class,
                 '',
-                "/^$/i",
+                '/^$/i',
             ],
             // 19
             [
@@ -262,7 +262,7 @@ class CheckerTest extends TestCase
                 Result::CODE_PASS,
                 Mechanism\AMechanism::class,
                 '',
-                "/^$/i",
+                '/^$/i',
             ],
         ];
     }
@@ -278,8 +278,7 @@ class CheckerTest extends TestCase
         string $expectedFailMessage,
         string $expectedMessagesRegex,
         int $flags = Checker::FLAG_CHECK_MAILFROADDRESS
-    ): void
-    {
+    ): void {
         $checker = new Checker($dnsResolver);
         $actualResult = $checker->check($environment, $flags);
         $this->assertSame($expectedResultCode, $actualResult->getCode());

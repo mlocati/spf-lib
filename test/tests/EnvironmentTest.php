@@ -2,15 +2,10 @@
 
 declare(strict_types=1);
 
+use IPLib\Factory;
 use PHPUnit\Framework\TestCase;
 use SPFLib\Check\Environment;
-use SPFLib\Check\Result;
-use SPFLib\Checker;
-use SPFLib\DNS\Resolver;
-use SPFLib\Test\FakeDnsResoler;
-use SPFLib\Term\Mechanism;
 use SPFLib\Exception\InvalidIPAddressException;
-use IPLib\Factory;
 
 class EnvironmentTest extends TestCase
 {
