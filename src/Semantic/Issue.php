@@ -170,8 +170,6 @@ class Issue
                 return 'warning';
             case static::LEVEL_FATAL:
                 return 'fatal';
-            default:
-                return '';
         }
     }
 }

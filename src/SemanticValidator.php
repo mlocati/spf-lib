@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SPFLib;
 
+use SPFLib\Check\State;
 use SPFLib\Semantic\Issue;
 use SPFLib\Term\Mechanism;
 use SPFLib\Term\Modifier;
@@ -76,7 +77,8 @@ class SemanticValidator
                 $count++;
             }
         }
-        if ($count <= 10) {
+        $maxQueries = State::MAX_DNS_LOOKUPS;
+        if ($count <= $maxQueries) {
             return [];
         }
 
@@ -84,7 +86,7 @@ class SemanticValidator
             new Issue(
                 $record,
                 Issue::CODE_TOO_MANY_DNS_LOOKUPS,
-                "The total number of the '" . implode("', '", $mechanisms) . "' mechanisms and the '" . implode("', '", $modifiers) . "' modifiers is {$count} (it should not exceed 10)",
+                "The total number of the '" . implode("', '", $mechanisms) . "' mechanisms and the '" . implode("', '", $modifiers) . "' modifiers is {$count} (it should not exceed {$maxQueries})",
                 Issue::LEVEL_WARNING
             ),
         ];

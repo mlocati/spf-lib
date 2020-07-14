@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SPFLib\Term\Mechanism;
 
+use SPFLib\Macro\MacroString;
 use SPFLib\Term\Mechanism;
 
 /**
@@ -21,7 +22,7 @@ class PtrMechanism extends Mechanism
     public const HANDLE = 'ptr';
 
     /**
-     * @var string
+     * @var \SPFLib\Macro\MacroString
      */
     private $domainSpec;
 
@@ -29,10 +30,14 @@ class PtrMechanism extends Mechanism
      * Initialize the instance.
      *
      * @param string $qualifier the qualifier of this mechanism (the value of one of the Mechanism::QUALIFIER_... constants)
+     * @param \SPFLib\Macro\MacroString|string|null $domainSpec
      */
-    public function __construct(string $qualifier, string $domainSpec = '')
+    public function __construct(string $qualifier, $domainSpec = null)
     {
         parent::__construct($qualifier);
+        if (!$domainSpec instanceof MacroString) {
+            $domainSpec = MacroString\Decoder::getInstance()->decode($domainSpec === null ? '' : $domainSpec, MacroString\Decoder::FLAG_ALLOWEMPTY);
+        }
         $this->domainSpec = $domainSpec;
     }
 
@@ -45,11 +50,16 @@ class PtrMechanism extends Mechanism
     {
         $result = $this->getQualifier(true) . static::HANDLE;
         $domainSpec = $this->getDomainSpec();
-        if ($domainSpec !== '') {
-            $result .= ':' . $this->getDomainSpec();
+        if (!$domainSpec->isEmpty()) {
+            $result .= ':' . (string) $domainSpec;
         }
 
         return $result;
+    }
+
+    public function __clone()
+    {
+        $this->domainSpec = clone $this->getDomainSpec();
     }
 
     /**
@@ -62,7 +72,7 @@ class PtrMechanism extends Mechanism
         return static::HANDLE;
     }
 
-    public function getDomainSpec(): string
+    public function getDomainSpec(): MacroString
     {
         return $this->domainSpec;
     }

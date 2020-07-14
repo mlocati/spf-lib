@@ -7,8 +7,25 @@ This PHP library allows you to:
 - get the SPF record from a domain name
 - decode and validate the SPF record
 - create the value of a TXT record
+- check if domains and IP addresses satisfy the SPF records
 
 The implementation is based on [RFC 7208](https://tools.ietf.org/html/rfc7208).
+
+## Short introduction about SPF
+
+Here's a very simplified short description of the purpose of the SPF protocol.  
+
+When an email client contacts an email server in order to delivery an email message, the email server has these informations:
+
+1. the IP address of the email client that is sending the email
+2. the domain that the email client specified at the beginning of the SMTP delivery (after the `HELO`/`EHLO` SMTP command) 
+3. the sender email address (as specified in the `MAIL FROM` SMTP command)
+
+The email server can use the SPF protocol to determine if the client is allowed or not to send email addresses with the specified domains (the `HELO`/`EHLO` domain and/or the domain after the `@` in the `MAIL FROM` email address).
+
+This is done by quering the SPF DNS records of the domain(s) being checked, which can tell the server if the client is allowed/non allowed/probably not allowed to send the email. 
+
+You can use this PHP library to build, validate and check the SPF records.
 
 ## Installation
 
@@ -19,6 +36,32 @@ composer require mlocati/spf-lib
 ```
 
 ## Usage
+
+### Validating domains and IP addresses
+
+Let's assume that the email client has the IP address `1.2.3.4`, specified `helo.domain` with the `HELO`/`EHLO` SMTP command, and specified `sender@domain.com` in the `MAIL FROM` email address.
+
+These data are represented by the `SPFLib\Check\Environment` class: you can create it with:
+
+```php
+$environment = new \SPFLib\Check\Environment(`1.2.3.4`, `sender@domain.com`, `helo.domain`);
+```
+
+To check the SPF records, you can use the `SPFLib\Checker` class:
+
+```php
+$checker = new \SPFLib\Checker();
+$checkResult = $checker->check($environment);
+```
+
+By default, the `check()` method checks both the  `HELO`/`EHLO` and the `MAIL FROM` domains (if both are available and if they are different). You can check just one by specifying `\SPFLib\Checker::FLAG_CHECK_HELODOMAIN` or `\SPFLib\Checker::FLAG_CHECK_MAILFROADDRESS` as the second argument of the `check()` method.
+
+`$checkResult` is an instance of `SPFLib\Term\Mechanism\Result`, that provides:
+
+- the check result (`$checkResult->getCode()`), which is one of the [values specified in the RFC](https://tools.ietf.org/html/rfc7208#section-2.6).  
+- the SPF mechanism that provided the result, if available (`$checkResult->getMatchedMechanism()`)
+- the failure description, if provided by the SPF records (`$checkResult->getFailExplanation()`)
+- optional relevant messages from the check process (`$checkResult->getMessages()`)
 
 ### Retrieving the SPF record from a domain name
 

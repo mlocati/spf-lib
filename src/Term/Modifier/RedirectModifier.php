@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SPFLib\Term\Modifier;
 
+use SPFLib\Macro\MacroString;
 use SPFLib\Term\Modifier;
 
 /**
@@ -21,15 +22,22 @@ class RedirectModifier extends Modifier
     public const HANDLE = 'redirect';
 
     /**
-     * @var string
+     * @var \SPFLib\Macro\MacroString
      */
     private $domainSpec;
 
     /**
      * Initialize the instance.
+     *
+     * @param \SPFLib\Macro\MacroString|string $domainSpec
+     *
+     * @throws \SPFLib\Exception\InvalidMacroStringException if $domainSpec is a string which does not represent a valid MacroString, or if it's an empty MacroString instance
      */
-    public function __construct(string $domainSpec)
+    public function __construct($domainSpec)
     {
+        if (!$domainSpec instanceof MacroString || $domainSpec->isEmpty()) {
+            $domainSpec = MacroString\Decoder::getInstance()->decode($domainSpec, MacroString\Decoder::FLAG_EXP);
+        }
         $this->domainSpec = $domainSpec;
     }
 
@@ -43,6 +51,11 @@ class RedirectModifier extends Modifier
         return static::HANDLE . '=' . $this->getDomainSpec();
     }
 
+    public function __clone()
+    {
+        $this->domainSpec = clone $this->getDomainSpec();
+    }
+
     /**
      * {@inheritdoc}
      *
@@ -53,7 +66,7 @@ class RedirectModifier extends Modifier
         return static::HANDLE;
     }
 
-    public function getDomainSpec(): string
+    public function getDomainSpec(): MacroString
     {
         return $this->domainSpec;
     }
