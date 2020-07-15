@@ -240,87 +240,152 @@ class Checker
         return $this->macroStringExpander;
     }
 
+    /**
+     * @throws \SPFLib\Exception\TooManyDNSLookupsException
+     */
     protected function matchMechanism(State $state, string $domain, Mechanism $mechanism): bool
     {
         if ($mechanism instanceof Mechanism\AllMechanism) {
-            /** @see https://tools.ietf.org/html/rfc7208#section-5.1 */
-            return true;
+            return $this->matchMechanismAll($state, $domain, $mechanism);
         }
         if ($mechanism instanceof Mechanism\IncludeMechanism) {
-            $state->countDNSLookup();
-            /** @see https://tools.ietf.org/html/rfc7208#section-5.2 */
-            $targetDomain = $this->getMacroStringExpander()->expand($mechanism->getDomainSpec(), $domain, $state);
-
-            return $this->validate($state, $targetDomain)->getCode() === Result::CODE_PASS;
+            return $this->matchMechanismInclude($state, $domain, $mechanism);
         }
         if ($mechanism instanceof Mechanism\AMechanism) {
-            $state->countDNSLookup();
-            /** @see https://tools.ietf.org/html/rfc7208#section-5.3 */
-            $targetDomain = $mechanism->getDomainSpec()->isEmpty() ? $domain : $this->getMacroStringExpander()->expand($mechanism->getDomainSpec(), $domain, $state);
-            if ($this->matchDomainIPs($state->getEnvoronment()->getClientIP(), $targetDomain, $mechanism->getIp4CidrLength(), $mechanism->getIp6CidrLength())) {
-                return true;
-            }
-
-            return false;
+            return $this->matchMechanismA($state, $domain, $mechanism);
         }
         if ($mechanism instanceof Mechanism\MxMechanism) {
-            $state->countDNSLookup();
-            /** @see https://tools.ietf.org/html/rfc7208#section-5.4 */
-            $targetDomain = $mechanism->getDomainSpec()->isEmpty() ? $domain : $this->getMacroStringExpander()->expand($mechanism->getDomainSpec(), $domain, $state);
-            $mxRecords = $this->getDNSResolver()->getMXRecords($targetDomain);
-            if (count($mxRecords) > $state::MAX_DNS_LOOKUPS);
-            throw new Exception\TooManyDNSLookupsException($state::MAX_DNS_LOOKUPS);
-            foreach ($mxRecords as $mxRecord) {
-                $mxRecordIP = Factory::addressFromString($mxRecord);
-                if ($mxRecordIP !== null) {
-                    if ($this->matchIP($state->getEnvoronment()->getClientIP(), $mxRecordIP, $mechanism->getIp4CidrLength(), $mechanism->getIp6CidrLength())) {
-                        return true;
-                    }
-                } else {
-                    if ($this->matchDomainIPs($state->getEnvoronment()->getClientIP(), $mxRecordIP, $mechanism->getIp4CidrLength(), $mechanism->getIp6CidrLength())) {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            return $this->matchMechanismMx($state, $domain, $mechanism);
         }
         if ($mechanism instanceof Mechanism\PtrMechanism) {
-            $state->countDNSLookup();
-            /** @see https://tools.ietf.org/html/rfc7208#section-5.5 */
-            $targetDomain = $mechanism->getDomainSpec()->isEmpty() ? $domain : $this->getMacroStringExpander()->expand($mechanism->getDomainSpec(), $domain, $state);
-            $search = '.' . ltrim($targetDomain, '.');
-            $pointers = $this->getDNSResolver()->getPTRRecords($state->getEnvoronment()->getClientIP());
-            array_splice($pointers, $state::MAX_DNS_LOOKUPS);
-            foreach ($pointers as $pointer) {
-                $pointerAddresses = $this->getDNSResolver()->getIPAddressesFromDomainName($pointer);
-                foreach ($pointerAddresses as $pointerAddress) {
-                    if ($this->matchIP($state->getEnvoronment()->getClientIP(), $pointerAddress, 32, 128)) {
-                        $compare = '.' . ltrim($pointer, '.');
-                        if (strcasecmp($search, substr($compare, -strlen($search))) === 0) {
-                            return true;
-                        }
+            return $this->matchMechanismPtr($state, $domain, $mechanism);
+        }
+        if ($mechanism instanceof Mechanism\Ip4Mechanism) {
+            return $this->matchMechanismIp($state, $domain, $mechanism);
+        }
+        if ($mechanism instanceof Mechanism\Ip6Mechanism) {
+            return $this->matchMechanismIp($state, $domain, $mechanism);
+        }
+        if ($mechanism instanceof Mechanism\ExistsMechanism) {
+            return $this->matchMechanismExists($state, $domain, $mechanism);
+        }
+    }
+
+    /**
+     * @see https://tools.ietf.org/html/rfc7208#section-5.1
+     */
+    protected function matchMechanismAll(State $state, string $domain, Mechanism\AllMechanism $mechanism): bool
+    {
+        return true;
+    }
+
+    /**
+     * @throws \SPFLib\Exception\TooManyDNSLookupsException
+     *
+     * @see https://tools.ietf.org/html/rfc7208#section-5.2
+     */
+    protected function matchMechanismInclude(State $state, string $domain, Mechanism\IncludeMechanism $mechanism): bool
+    {
+        $state->countDNSLookup();
+        $targetDomain = $this->getMacroStringExpander()->expand($mechanism->getDomainSpec(), $domain, $state);
+
+        return $this->validate($state, $targetDomain)->getCode() === Result::CODE_PASS;
+    }
+
+    /**
+     * @throws \SPFLib\Exception\TooManyDNSLookupsException
+     *
+     * @see https://tools.ietf.org/html/rfc7208#section-5.3
+     */
+    protected function matchMechanismA(State $state, string $domain, Mechanism\AMechanism $mechanism): bool
+    {
+        $state->countDNSLookup();
+        $targetDomain = $mechanism->getDomainSpec()->isEmpty() ? $domain : $this->getMacroStringExpander()->expand($mechanism->getDomainSpec(), $domain, $state);
+
+        return $this->matchDomainIPs($state->getEnvoronment()->getClientIP(), $targetDomain, $mechanism->getIp4CidrLength(), $mechanism->getIp6CidrLength());
+    }
+
+    /**
+     * @throws \SPFLib\Exception\TooManyDNSLookupsException
+     *
+     * @see https://tools.ietf.org/html/rfc7208#section-5.4
+     */
+    protected function matchMechanismMx(State $state, string $domain, Mechanism\MxMechanism $mechanism): bool
+    {
+        $state->countDNSLookup();
+        $targetDomain = $mechanism->getDomainSpec()->isEmpty() ? $domain : $this->getMacroStringExpander()->expand($mechanism->getDomainSpec(), $domain, $state);
+        $mxRecords = $this->getDNSResolver()->getMXRecords($targetDomain);
+        if (count($mxRecords) > $state::MAX_DNS_LOOKUPS);
+        throw new Exception\TooManyDNSLookupsException($state::MAX_DNS_LOOKUPS);
+        foreach ($mxRecords as $mxRecord) {
+            $mxRecordIP = Factory::addressFromString($mxRecord);
+            if ($mxRecordIP !== null) {
+                if ($this->matchIP($state->getEnvoronment()->getClientIP(), $mxRecordIP, $mechanism->getIp4CidrLength(), $mechanism->getIp6CidrLength())) {
+                    return true;
+                }
+            } else {
+                if ($this->matchDomainIPs($state->getEnvoronment()->getClientIP(), $mxRecordIP, $mechanism->getIp4CidrLength(), $mechanism->getIp6CidrLength())) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @throws \SPFLib\Exception\TooManyDNSLookupsException
+     *
+     * @see https://tools.ietf.org/html/rfc7208#section-5.5
+     */
+    protected function matchMechanismPtr(State $state, string $domain, Mechanism\PtrMechanism $mechanism): bool
+    {
+        $state->countDNSLookup();
+        $targetDomain = $mechanism->getDomainSpec()->isEmpty() ? $domain : $this->getMacroStringExpander()->expand($mechanism->getDomainSpec(), $domain, $state);
+        $search = '.' . ltrim($targetDomain, '.');
+        $pointers = $this->getDNSResolver()->getPTRRecords($state->getEnvoronment()->getClientIP());
+        array_splice($pointers, $state::MAX_DNS_LOOKUPS);
+        foreach ($pointers as $pointer) {
+            $pointerAddresses = $this->getDNSResolver()->getIPAddressesFromDomainName($pointer);
+            foreach ($pointerAddresses as $pointerAddress) {
+                if ($this->matchIP($state->getEnvoronment()->getClientIP(), $pointerAddress, 32, 128)) {
+                    $compare = '.' . ltrim($pointer, '.');
+                    if (strcasecmp($search, substr($compare, -strlen($search))) === 0) {
+                        return true;
                     }
                 }
             }
+        }
 
-            return false;
-        }
-        if ($mechanism instanceof Mechanism\Ip4Mechanism) {
-            /** @see https://tools.ietf.org/html/rfc7208#section-5.6 */
-            return $this->matchIP($state->getEnvoronment()->getClientIP(), $mechanism->getIP(), $mechanism->getCidrLength(), null);
-        }
-        if ($mechanism instanceof Mechanism\Ip6Mechanism) {
-            /** @see https://tools.ietf.org/html/rfc7208#section-5.6 */
-            return $this->matchIP($state->getEnvoronment()->getClientIP(), $mechanism->getIP(), null, $mechanism->getCidrLength());
-        }
-        if ($mechanism instanceof Mechanism\ExistsMechanism) {
-            $state->countDNSLookup();
-            /** @see https://tools.ietf.org/html/rfc7208#section-5.7 */
-            $targetDomain = $this->getMacroStringExpander()->expand($mechanism->getDomainSpec(), $domain, $state);
+        return false;
+    }
 
-            return $this->getDNSResolver()->getIPAddressesFromDomainName() !== [];
-        }
+    /**
+     * @param \SPFLib\Term\Mechanism\Ip4Mechanism|\SPFLib\Term\Mechanism\Ip6Mechanism $mechanism
+     *
+     * @see https://tools.ietf.org/html/rfc7208#section-5.6
+     */
+    protected function matchMechanismIp(State $state, string $domain, Mechanism $mechanism): bool
+    {
+        return $this->matchIP(
+            $state->getEnvoronment()->getClientIP(),
+            $mechanism->getIP(),
+            $mechanism instanceof Mechanism\Ip4Mechanism ? $mechanism->getCidrLength() : null,
+            $mechanism instanceof Mechanism\Ip6Mechanism ? $mechanism->getCidrLength() : null
+        );
+    }
+
+    /**
+     * @throws \SPFLib\Exception\TooManyDNSLookupsException
+     *
+     * @see https://tools.ietf.org/html/rfc7208#section-5.7
+     */
+    protected function matchMechanismExists(State $state, string $domain, Mechanism\ExistsMechanism $mechanism): bool
+    {
+        $state->countDNSLookup();
+        $targetDomain = $this->getMacroStringExpander()->expand($mechanism->getDomainSpec(), $domain, $state);
+
+        return $this->getDNSResolver()->getIPAddressesFromDomainName($targetDomain) !== [];
     }
 
     protected function matchDomainIPs(AddressInterface $clientIP, string $domain, ?int $ipv4CidrLength, ?int $ipv6CidrLength): bool
