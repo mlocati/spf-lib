@@ -146,6 +146,8 @@ class Checker
             return $this->validate($state, $domain);
         } catch (Exception\TooManyDNSLookupsException $x) {
             return Result::create(Result::CODE_ERROR_PERMANENT)->addMessage($x->getMessage());
+        } catch (Exception\DNSResolutionException $x) {
+            return Result::create(Result::CODE_ERROR_TEMPORARY)->addMessage($x->getMessage());
         }
     }
 
