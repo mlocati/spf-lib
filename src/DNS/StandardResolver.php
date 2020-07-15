@@ -24,17 +24,9 @@ class StandardResolver implements Resolver
      */
     public function getTXTRecords(string $domain): array
     {
-        if ($domain === '') {
-            throw new DNSResolutionException('', 'No domain specified in ' . __FUNCTION__);
-        }
-        try {
-            $actualDomain = DomainName::fromName($domain)->getPunycode();
-        } catch (IDNAException $x) {
-            throw new DNSResolutionException($domain, $x->getMessage());
-        }
         $error = 'Unknown error';
-        $records = $this->callWithErrorHandler(static function () use ($actualDomain) {
-            return dns_get_record($actualDomain, DNS_TXT);
+        $records = $this->callWithErrorHandler(function () use ($domain) {
+            return dns_get_record($this->normalizeDomain($domain), DNS_TXT);
         }, $error);
         if ($records === false) {
             throw new DNSResolutionException($domain, "Failed to get the TXT records for {$domain}: {$error}");
@@ -57,8 +49,8 @@ class StandardResolver implements Resolver
     public function getIPAddressesFromDomainName(string $domain): array
     {
         $error = 'Unknown error';
-        $records = $this->callWithErrorHandler(static function () use ($domain) {
-            return dns_get_record($domain, DNS_A | DNS_AAAA);
+        $records = $this->callWithErrorHandler(function () use ($domain) {
+            return dns_get_record($this->normalizeDomain($domain), DNS_A | DNS_AAAA);
         }, $error);
         if ($records === false) {
             throw new DNSResolutionException($domain, "Failed to get the A/AAAA records for {$domain}: {$error}");
@@ -82,8 +74,8 @@ class StandardResolver implements Resolver
     public function getMXRecords(string $domain): array
     {
         $error = 'Unknown error';
-        $records = $this->callWithErrorHandler(static function () use ($domain) {
-            return dns_get_record($domain, DNS_MX);
+        $records = $this->callWithErrorHandler(function () use ($domain) {
+            return dns_get_record($this->normalizeDomain($domain), DNS_MX);
         }, $error);
         if ($records === false) {
             throw new DNSResolutionException($domain, "Failed to get the A/AAAA records for {$domain}: {$error}");
@@ -166,5 +158,22 @@ class StandardResolver implements Resolver
         }
 
         return $result;
+    }
+
+    /**
+     * @throws \SPFLib\Exception\DNSResolutionException
+     */
+    protected function normalizeDomain(string $domain): string
+    {
+        try {
+            $actualDomain = DomainName::fromName($domain)->getPunycode();
+        } catch (IDNAException $x) {
+            $actualDomain = $domain;
+        }
+        if ($actualDomain === '' || trim($actualDomain) !== $actualDomain) {
+            throw new DNSResolutionException($domain, "The domain '{$domain}' is not valid");
+        }
+
+        return $actualDomain;
     }
 }
