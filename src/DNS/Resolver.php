@@ -23,6 +23,8 @@ interface Resolver
     /**
      * Get the IP addresses associated to a domain name.
      *
+     * @throws \SPFLib\Exception\DNSResolutionException in case of DNS resolution errors
+     *
      * @return \IPLib\Address\AddressInterface[]
      */
     public function getIPAddressesFromDomainName(string $domain): array;
@@ -30,12 +32,16 @@ interface Resolver
     /**
      * Get the IP addresses/domain names of the MX DNS record for a domain.
      *
+     * @throws \SPFLib\Exception\DNSResolutionException in case of DNS resolution errors
+     *
      * @return string[]
      */
     public function getMXRecords(string $domain): array;
 
     /**
      * Get the value of the PTR DNS records for an IP address.
+     *
+     * @throws \SPFLib\Exception\DNSResolutionException in case of DNS resolution errors
      *
      * @return string[]
      */
