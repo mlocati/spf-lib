@@ -120,28 +120,29 @@ class Checker
 
     protected function checkHeloDomain(Environment $environment): Result
     {
-        try {
-            $state = $this->createHeloDomainCheckState($environment);
-            $domain = $state->getSenderDomain();
-            if ($domain === '') {
-                return Result::create(Result::CODE_NONE)->addMessage('The "HELO"/"EHLO" domain is not valid');
-            }
-
-            return $this->validate($state, $domain);
-        } catch (Exception\TooManyDNSLookupsException $x) {
-            return Result::create(Result::CODE_ERROR_PERMANENT)->addMessage($x->getMessage());
+        $state = $this->createHeloDomainCheckState($environment);
+        $domain = $state->getSenderDomain();
+        if ($domain === '') {
+            return Result::create(Result::CODE_NONE)->addMessage('The "HELO"/"EHLO" domain is not valid');
         }
+
+        return $this->checkWithState($environment, $state, $domain);
     }
 
     protected function checkMailFrom(Environment $environment): Result
     {
-        try {
-            $state = $this->createMailFromCheckState($environment);
-            $domain = $state->getSenderDomain();
-            if ($domain === '') {
-                return Result::create(Result::CODE_NONE)->addMessage('The "MAIL FROM" email address is not valid');
-            }
+        $state = $this->createMailFromCheckState($environment);
+        $domain = $state->getSenderDomain();
+        if ($domain === '') {
+            return Result::create(Result::CODE_NONE)->addMessage('The "MAIL FROM" email address is not valid');
+        }
 
+        return $this->checkWithState($environment, $state, $domain);
+    }
+
+    protected function checkWithState(Environment $environment, State $state, string $domain): Result
+    {
+        try {
             return $this->validate($state, $domain);
         } catch (Exception\TooManyDNSLookupsException $x) {
             return Result::create(Result::CODE_ERROR_PERMANENT)->addMessage($x->getMessage());
@@ -150,6 +151,7 @@ class Checker
 
     /**
      * @throws \SPFLib\Exception\TooManyDNSLookupsException
+     * @throws \SPFLib\Exception\DNSResolutionException
      */
     protected function validate(State $state, string $domain): Result
     {
@@ -242,6 +244,7 @@ class Checker
 
     /**
      * @throws \SPFLib\Exception\TooManyDNSLookupsException
+     * @throws \SPFLib\Exception\DNSResolutionException
      */
     protected function matchMechanism(State $state, string $domain, Mechanism $mechanism): bool
     {
@@ -281,6 +284,7 @@ class Checker
 
     /**
      * @throws \SPFLib\Exception\TooManyDNSLookupsException
+     * @throws \SPFLib\Exception\DNSResolutionException
      *
      * @see https://tools.ietf.org/html/rfc7208#section-5.2
      */
@@ -294,6 +298,7 @@ class Checker
 
     /**
      * @throws \SPFLib\Exception\TooManyDNSLookupsException
+     * @throws \SPFLib\Exception\DNSResolutionException
      *
      * @see https://tools.ietf.org/html/rfc7208#section-5.3
      */
@@ -307,6 +312,7 @@ class Checker
 
     /**
      * @throws \SPFLib\Exception\TooManyDNSLookupsException
+     * @throws \SPFLib\Exception\DNSResolutionException
      *
      * @see https://tools.ietf.org/html/rfc7208#section-5.4
      */
@@ -335,6 +341,7 @@ class Checker
 
     /**
      * @throws \SPFLib\Exception\TooManyDNSLookupsException
+     * @throws \SPFLib\Exception\DNSResolutionException
      *
      * @see https://tools.ietf.org/html/rfc7208#section-5.5
      */
@@ -377,6 +384,7 @@ class Checker
 
     /**
      * @throws \SPFLib\Exception\TooManyDNSLookupsException
+     * @throws \SPFLib\Exception\DNSResolutionException
      *
      * @see https://tools.ietf.org/html/rfc7208#section-5.7
      */
@@ -388,6 +396,9 @@ class Checker
         return $this->getDNSResolver()->getIPAddressesFromDomainName($targetDomain) !== [];
     }
 
+    /**
+     * @throws \SPFLib\Exception\DNSResolutionException
+     */
     protected function matchDomainIPs(AddressInterface $clientIP, string $domain, ?int $ipv4CidrLength, ?int $ipv6CidrLength): bool
     {
         foreach ($this->getDNSResolver()->getIPAddressesFromDomainName($domain) as $targetIP) {
