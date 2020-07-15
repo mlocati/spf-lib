@@ -87,7 +87,7 @@ class Checker
      */
     public function check(Environment $environment, int $flags = self::FLAG_CHECK_HELODOMAIN | self::FLAG_CHECK_MAILFROADDRESS): Result
     {
-        if ($environment->getSMTPClientIP() === null) {
+        if ($environment->getClientIP() === null) {
             return Result::create(Result::CODE_NONE)->addMessage('The IP address of the sender SMTP client is not speciified');
         }
         if ($flags & static::FLAG_CHECK_HELODOMAIN) {
@@ -258,7 +258,7 @@ class Checker
             $state->countDNSLookup();
             /** @see https://tools.ietf.org/html/rfc7208#section-5.3 */
             $targetDomain = $mechanism->getDomainSpec()->isEmpty() ? $domain : $this->getMacroStringExpander()->expand($mechanism->getDomainSpec(), $domain, $state);
-            if ($this->matchDomainIPs($state->getEnvoronment()->getSMTPClientIP(), $targetDomain, $mechanism->getIp4CidrLength(), $mechanism->getIp6CidrLength())) {
+            if ($this->matchDomainIPs($state->getEnvoronment()->getClientIP(), $targetDomain, $mechanism->getIp4CidrLength(), $mechanism->getIp6CidrLength())) {
                 return true;
             }
 
@@ -274,11 +274,11 @@ class Checker
             foreach ($mxRecords as $mxRecord) {
                 $mxRecordIP = Factory::addressFromString($mxRecord);
                 if ($mxRecordIP !== null) {
-                    if ($this->matchIP($state->getEnvoronment()->getSMTPClientIP(), $mxRecordIP, $mechanism->getIp4CidrLength(), $mechanism->getIp6CidrLength())) {
+                    if ($this->matchIP($state->getEnvoronment()->getClientIP(), $mxRecordIP, $mechanism->getIp4CidrLength(), $mechanism->getIp6CidrLength())) {
                         return true;
                     }
                 } else {
-                    if ($this->matchDomainIPs($state->getEnvoronment()->getSMTPClientIP(), $mxRecordIP, $mechanism->getIp4CidrLength(), $mechanism->getIp6CidrLength())) {
+                    if ($this->matchDomainIPs($state->getEnvoronment()->getClientIP(), $mxRecordIP, $mechanism->getIp4CidrLength(), $mechanism->getIp6CidrLength())) {
                         return true;
                     }
                 }
@@ -291,12 +291,12 @@ class Checker
             /** @see https://tools.ietf.org/html/rfc7208#section-5.5 */
             $targetDomain = $mechanism->getDomainSpec()->isEmpty() ? $domain : $this->getMacroStringExpander()->expand($mechanism->getDomainSpec(), $domain, $state);
             $search = '.' . ltrim($targetDomain, '.');
-            $pointers = $this->getDNSResolver()->getPTRRecords($state->getEnvoronment()->getSMTPClientIP());
+            $pointers = $this->getDNSResolver()->getPTRRecords($state->getEnvoronment()->getClientIP());
             array_splice($pointers, $state::MAX_DNS_LOOKUPS);
             foreach ($pointers as $pointer) {
                 $pointerAddresses = $this->getDNSResolver()->getIPAddressesFromDomainName($pointer);
                 foreach ($pointerAddresses as $pointerAddress) {
-                    if ($this->matchIP($state->getEnvoronment()->getSMTPClientIP(), $pointerAddress, 32, 128)) {
+                    if ($this->matchIP($state->getEnvoronment()->getClientIP(), $pointerAddress, 32, 128)) {
                         $compare = '.' . ltrim($pointer, '.');
                         if (strcasecmp($search, substr($compare, -strlen($search))) === 0) {
                             return true;
@@ -309,11 +309,11 @@ class Checker
         }
         if ($mechanism instanceof Mechanism\Ip4Mechanism) {
             /** @see https://tools.ietf.org/html/rfc7208#section-5.6 */
-            return $this->matchIP($state->getEnvoronment()->getSMTPClientIP(), $mechanism->getIP(), $mechanism->getCidrLength(), null);
+            return $this->matchIP($state->getEnvoronment()->getClientIP(), $mechanism->getIP(), $mechanism->getCidrLength(), null);
         }
         if ($mechanism instanceof Mechanism\Ip6Mechanism) {
             /** @see https://tools.ietf.org/html/rfc7208#section-5.6 */
-            return $this->matchIP($state->getEnvoronment()->getSMTPClientIP(), $mechanism->getIP(), null, $mechanism->getCidrLength());
+            return $this->matchIP($state->getEnvoronment()->getClientIP(), $mechanism->getIP(), null, $mechanism->getCidrLength());
         }
         if ($mechanism instanceof Mechanism\ExistsMechanism) {
             $state->countDNSLookup();

@@ -102,7 +102,7 @@ class Expander
                 $value = $currentDomain;
                 break;
             case Chunk\Placeholder::ML_IP:
-                $ip = $state->getEnvoronment()->getSMTPClientIP();
+                $ip = $state->getEnvoronment()->getClientIP();
                 if ($ip !== null) {
                     if ($ip instanceof Address\IPv6) {
                         $value = implode('.', str_split(str_replace(':', '', $ip->toString(true)), 1));
@@ -112,10 +112,10 @@ class Expander
                 }
                 break;
             case Chunk\Placeholder::ML_IP_VALIDATED_DOMAIN:
-                $value = $state->getSMTPClientIPDomain();
+                $value = $state->getClientIPDomain();
                 break;
             case Chunk\Placeholder::ML_IP_TYPE:
-                $ip = $state->getEnvoronment()->getSMTPClientIP();
+                $ip = $state->getEnvoronment()->getClientIP();
                 if ($ip === null) {
                     throw new Exception\MissingEnvironmentValueException(Chunk\Placeholder::ML_IP);
                 }
@@ -129,7 +129,7 @@ class Expander
                 $value = $state->getEnvoronment()->getHeloDomain();
                 break;
             case Chunk\Placeholder::ML_SMTP_CLIENT_IP:
-                $ip = $state->getEnvoronment()->getSMTPClientIP();
+                $ip = $state->getEnvoronment()->getClientIP();
                 if ($ip === null) {
                     throw new Exception\MissingEnvironmentValueException(Chunk\Placeholder::ML_IP);
                 }

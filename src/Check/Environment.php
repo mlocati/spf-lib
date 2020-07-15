@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace SPFLib\Check;
 
-use Closure;
 use IPLib\Address\AddressInterface;
 use IPLib\Factory;
 use SPFLib\Exception\InvalidIPAddressException;
@@ -26,14 +25,7 @@ class Environment
      *
      * @var \IPLib\Address\AddressInterface|null
      */
-    private $smtpClientIP;
-
-    /**
-     * The email address specified in the "MAIL FROM" MTA command.
-     *
-     * @var string
-     */
-    private $mailFrom;
+    private $clientIP;
 
     /**
      * The domain name that was provided to the SMTP server via the HELO or EHLO SMTP verb.
@@ -43,11 +35,11 @@ class Environment
     private $heloDomain;
 
     /**
-     * The closure that fetches the domain name derived from the reverse lookup of the SMTP client IP.
+     * The email address specified in the "MAIL FROM" MTA command.
      *
-     * @var \Closure|null
+     * @var string
      */
-    private $smtpClientIPDomainGetter;
+    private $mailFrom;
 
     /**
      * The name of the receiving MTA.
@@ -57,75 +49,50 @@ class Environment
      *
      * @var string
      */
-    private $checkerDomain = '';
+    private $checkerDomain;
 
     /**
      * Initialize the instance.
      *
      * @param \IPLib\Address\AddressInterface|string|null $clientIP the IP address of the SMTP client that is emitting the email
+     * @param string $heloDomain the domain specified in the "HELO" (or "EHLO") MTA command (if NULL we'll use the domain of $mailFrom)
      * @param string $mailFrom email the address specified in the "MAIL FROM" MTA command
-     * @param string|null $heloDomain the domain specified in the "HELO" (or "EHLO") MTA command (if NULL we'll use the domain of $mailFrom)
+     * @param string $checkerDomain the fully qualified name of the host checking the SPF record
      *
      * @throws \SPFLib\Exception\InvalidIPAddressException if $clientIP is not empty and doesn't represent a valid IP address
      */
-    public function __construct($clientIP, string $mailFrom, ?string $heloDomain = null)
+    public function __construct($clientIP, string $heloDomain, string $mailFrom = '', string $checkerDomain = self::UNKNOWN_CHECKER_DOMAIN)
     {
-        if ($heloDomain === null) {
-            $atPosition = strpos($mailFrom, '@');
-            $heloDomain = $atPosition === false ? '' : substr($mailFrom, $atPosition + 1);
-        }
-        $this
-            ->setSMTPClientIP($clientIP)
-            ->setMailFrom($mailFrom)
-            ->setHeloDomain($heloDomain)
-            ->setCheckerDomain(static::UNKNOWN_CHECKER_DOMAIN)
-        ;
-    }
-
-    /**
-     * Set the IP address of the SMTP client that is emitting the email.
-     *
-     * @param \IPLib\Address\AddressInterface|string|null $value
-     *
-     * @throws \SPFLib\Exception\InvalidIPAddressException if $value is not empty and doesn't represent a valid IP address
-     *
-     * @return $this
-     */
-    public function setSMTPClientIP($value): self
-    {
-        if ($value === null || $value === '') {
-            $this->smtpClientIP = null;
-        } elseif ($value instanceof AddressInterface) {
-            $this->smtpClientIP = $value;
+        if ($clientIP === null || $clientIP === '') {
+            $this->clientIP = null;
+        } elseif ($clientIP instanceof AddressInterface) {
+            $this->clientIP = $clientIP;
         } else {
-            $address = Factory::addressFromString($value);
+            $address = Factory::addressFromString($clientIP);
             if ($address === null) {
-                throw new InvalidIPAddressException($value);
+                throw new InvalidIPAddressException($clientIP);
             }
-            $this->smtpClientIP = $address;
+            $this->clientIP = $address;
         }
-
-        return $this;
+        $this->heloDomain = $heloDomain;
+        $this->mailFrom = $mailFrom;
+        $this->checkerDomain = $checkerDomain;
     }
 
     /**
      * Get the IP address of the SMTP client that is emitting the email.
      */
-    public function getSMTPClientIP(): ?AddressInterface
+    public function getClientIP(): ?AddressInterface
     {
-        return $this->smtpClientIP;
+        return $this->clientIP;
     }
 
     /**
-     * Set the email address specified in the "MAIL FROM" MTA command.
-     *
-     * @return $this
+     * Get the domain name that was provided to the SMTP server via the HELO or EHLO SMTP verb.
      */
-    public function setMailFrom(string $value): self
+    public function getHeloDomain(): string
     {
-        $this->mailFrom = $value;
-
-        return $this;
+        return $this->heloDomain;
     }
 
     /**
@@ -145,41 +112,6 @@ class Environment
         $atPosition = strpos($mailFrom, '@');
 
         return $atPosition === false ? '' : substr($mailFrom, $atPosition + 1);
-    }
-
-    /**
-     * Set the domain name that was provided to the SMTP server via the HELO or EHLO SMTP verb.
-     *
-     * @return $this
-     */
-    public function setHeloDomain(string $value): self
-    {
-        $this->heloDomain = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get the domain name that was provided to the SMTP server via the HELO or EHLO SMTP verb.
-     */
-    public function getHeloDomain(): string
-    {
-        return $this->heloDomain;
-    }
-
-    /**
-     * Set the name of the receiving MTA.
-     * This SHOULD be a fully qualified domain name, but if one does not exist (as when the checking is done by a Mail User Agent (MUA))
-     * or if policy restrictions dictate otherwise, the word "unknown" SHOULD be substituted.
-     * The domain name can be different from the name found in the MX record that the client MTA used to locate the receiving MTA.
-     *
-     * @return $this
-     */
-    public function setCheckerDomain(string $value): self
-    {
-        $this->checkerDomain = $value;
-
-        return $this;
     }
 
     /**

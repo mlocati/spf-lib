@@ -46,7 +46,7 @@ Let's assume that the email client has the IP address `1.2.3.4`, specified `helo
 These data are represented by the `SPFLib\Check\Environment` class: you can create it with:
 
 ```php
-$environment = new \SPFLib\Check\Environment(`1.2.3.4`, `sender@domain.com`, `helo.domain`);
+$environment = new \SPFLib\Check\Environment(`1.2.3.4`, `helo.domain`, `sender@domain.com`);
 ```
 
 To check the SPF records, you can use the `SPFLib\Checker` class:
