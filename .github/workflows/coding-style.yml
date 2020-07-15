@@ -12,6 +12,7 @@ jobs:
   php:
     name: PHP
     runs-on: ubuntu-latest
+    if: "!startsWith(github.event.head_commit.message, '[skip ci]')"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
