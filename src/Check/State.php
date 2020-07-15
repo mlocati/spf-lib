@@ -147,6 +147,8 @@ abstract class State
 
     /**
      * Count a DNS lookup and, if we are over the limit, throw a TooManyDNSLookupsException exception.
+     *
+     * @throws \SPFLib\Exception\TooManyDNSLookupsException
      */
     public function countDNSLookup(int $number = 1): void
     {
