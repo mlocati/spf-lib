@@ -148,12 +148,15 @@ class Checker
             return Result::create(Result::CODE_ERROR_PERMANENT)->addMessage($x->getMessage());
         } catch (Exception\DNSResolutionException $x) {
             return Result::create(Result::CODE_ERROR_TEMPORARY)->addMessage($x->getMessage());
+        } catch (Exception\IncludeMechanismException $x) {
+            return Result::create($x->getFinalResultCode())->addMessages($x->getIncludeResult()->getMesages());
         }
     }
 
     /**
      * @throws \SPFLib\Exception\TooManyDNSLookupsException
      * @throws \SPFLib\Exception\DNSResolutionException
+     * @throws \SPFLib\Exception\IncludeMechanismException
      */
     protected function validate(State $state, string $domain): Result
     {
@@ -247,6 +250,7 @@ class Checker
     /**
      * @throws \SPFLib\Exception\TooManyDNSLookupsException
      * @throws \SPFLib\Exception\DNSResolutionException
+     * @throws \SPFLib\Exception\IncludeMechanismException
      */
     protected function matchMechanism(State $state, string $domain, Mechanism $mechanism): bool
     {
@@ -287,6 +291,7 @@ class Checker
     /**
      * @throws \SPFLib\Exception\TooManyDNSLookupsException
      * @throws \SPFLib\Exception\DNSResolutionException
+     * @throws \SPFLib\Exception\IncludeMechanismException
      *
      * @see https://tools.ietf.org/html/rfc7208#section-5.2
      */
@@ -294,8 +299,20 @@ class Checker
     {
         $state->countDNSLookup();
         $targetDomain = $this->getMacroStringExpander()->expand($mechanism->getDomainSpec(), $domain, $state);
-
-        return $this->validate($state, $targetDomain)->getCode() === Result::CODE_PASS;
+        $includeResult = $this->validate($state, $targetDomain);
+        switch ($includeResult->getCode()) {
+            case Result::CODE_PASS:
+                return true;
+            case Result::CODE_FAIL:
+            case Result::CODE_SOFTFAIL:
+            case Result::CODE_NEUTRAL:
+                return false;
+            case Result::CODE_ERROR_TEMPORARY:
+                throw new Exception\IncludeMechanismException(Result::CODE_ERROR_TEMPORARY, $domain, $mechanism, $includeResult);
+            case Result::CODE_NONE:
+            case Result::CODE_ERROR_PERMANENT:
+                throw new Exception\IncludeMechanismException(Result::CODE_ERROR_PERMANENT, $domain, $mechanism, $includeResult);
+        }
     }
 
     /**

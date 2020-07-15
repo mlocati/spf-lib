@@ -156,6 +156,22 @@ class Result
     }
 
     /**
+     * Add multiple messages.
+     *
+     * @param string[] $value
+     *
+     * @return $this
+     */
+    public function addMessages(array $value): self
+    {
+        foreach ($value as $message) {
+            $this->addMessage($message);
+        }
+
+        return $this;
+    }
+
+    /**
      * Set the explanation for the "fail" case.
      *
      * @return $this
