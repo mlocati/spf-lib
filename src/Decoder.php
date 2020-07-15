@@ -100,7 +100,7 @@ class Decoder
     /**
      * Get the DNS resolver to be used.
      */
-    protected function getDNSResolver(): Resolver
+    public function getDNSResolver(): Resolver
     {
         return $this->dnsResolver;
     }
@@ -108,7 +108,7 @@ class Decoder
     /**
      * Get the MacroString decoder to be used.
      */
-    protected function getMacroStringDecoder(): MacroStringDecoder
+    public function getMacroStringDecoder(): MacroStringDecoder
     {
         return $this->macroStringDecoder;
     }
