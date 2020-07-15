@@ -14,7 +14,6 @@ use SPFLib\Check\Result;
 use SPFLib\Check\State;
 use SPFLib\DNS\Resolver;
 use SPFLib\DNS\StandardResolver;
-use SPFLib\Macro\MacroString\Decoder as MacroStringDecoder;
 use SPFLib\Macro\MacroString\Expander;
 use SPFLib\Semantic\Issue;
 use SPFLib\Term\Mechanism;
@@ -64,14 +63,14 @@ class Checker
      * Initialize the instance.
      *
      * @param \SPFLib\DNS\Resolver|null $dnsResolver the DNS resolver to be used (we'll use the default one if NULL)
-     * @param \SPFLib\Decoder|null $spfRecoder the SPF DNS record decoder to be used (we'll use the default one if NULL)
+     * @param \SPFLib\Decoder|null $spfDecoder the SPF DNS record decoder to be used (we'll use the default one if NULL)
      * @param \SPFLib\SemanticValidator|null $semanticValidator the SPF term semantic validator to be used (we'll use the default one if NULL)
      * @param \SPFLib\Macro\MacroString\Expander|null $macroStringExpander the MacroString expander to be used (we'll use the default one if NULL)
      */
-    public function __construct(?Resolver $dnsResolver = null, ?Decoder $spfRecoder = null, ?SemanticValidator $semanticValidator = null, ?Expander $macroStringExpander = null)
+    public function __construct(?Resolver $dnsResolver = null, ?Decoder $spfDecoder = null, ?SemanticValidator $semanticValidator = null, ?Expander $macroStringExpander = null)
     {
-        $this->dnsResolver = $dnsResolver ?: new StandardResolver();
-        $this->spfDecoder = $spfRecoder ?: new Decoder($this->getDNSResolver());
+        $this->dnsResolver = $dnsResolver ?: ($spfDecoder === null ? new StandardResolver() : $spfDecoder->getDNSResolver());
+        $this->spfDecoder = $spfDecoder ?: new Decoder($this->getDNSResolver());
         $this->semanticValidator = $semanticValidator ?: new SemanticValidator();
         $this->macroStringExpander = $macroStringExpander ?: new Expander();
     }
@@ -384,7 +383,7 @@ class Checker
                         $result->addMessage("Failed to build the fail explanation string: no TXT records for '{$targetDomain}'");
                         break;
                     case 1:
-                        $macroString = MacroStringDecoder::getInstance()->decode($txtRecords[0]);
+                        $macroString = $this->getSPFDecoder()->getMacroStringDecoder()->decode($txtRecords[0]);
                         $string = $this->getMacroStringExpander()->expand($macroString, $targetDomain, $state);
                         if (!preg_match('/^[\x01-\x7f]*$/s', $string)) {
                             $result->addMessage("Failed to build the fail explanation string: non US-ASCII chars found in '{$string}'");
