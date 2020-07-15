@@ -12,7 +12,7 @@ class EnvironmentTest extends TestCase
     public function testEnvironment(): void
     {
         $environment = new Environment('', '');
-        $this->assertNull($environment->getSMTPClientIP());
+        $this->assertNull($environment->getClientIP());
         $this->assertSame('', $environment->getMailFrom());
         $this->assertSame('', $environment->getHeloDomain());
         $this->assertSame(Environment::UNKNOWN_CHECKER_DOMAIN, $environment->getCheckerDomain());
@@ -24,12 +24,8 @@ class EnvironmentTest extends TestCase
         }
         $this->assertNotNull($error);
         $environment = new Environment(Factory::addressFromString('0000::00:0:2'), '');
-        $this->assertSame('::2', (string) $environment->getSMTPClientIP());
+        $this->assertSame('::2', (string) $environment->getClientIP());
         $environment = new Environment('0000::00:0:fA', '');
-        $this->assertSame('::fa', (string) $environment->getSMTPClientIP());
-        $environment = new Environment('1.2.3.4', 'john@doe.com');
-        $this->assertSame('doe.com', $environment->getHeloDomain());
-        $environment = new Environment('1.2.3.4', 'john@doe.com', '');
-        $this->assertSame('', $environment->getHeloDomain());
+        $this->assertSame('::fa', (string) $environment->getClientIP());
     }
 }

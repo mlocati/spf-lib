@@ -33,7 +33,7 @@ class OnlineTest extends TestCase
         }
         $this->assertNotNull($record);
         $checker = new Checker();
-        $result = $checker->check(new Environment('0.0.0.0', 'john-doe@example.com'));
+        $result = $checker->check(new Environment('0.0.0.0', 'example.com'));
         $this->assertSame(Result::CODE_FAIL, $result->getCode());
     }
 }

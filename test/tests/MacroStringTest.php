@@ -38,10 +38,16 @@ class PlaceholderExpansionTest extends TestCase
 
     public function provideValidPlaceholderCases(): array
     {
-        $environment = (new Environment('10.20.30.40', 'john-doe@sender.email.address.com', 'helo.sender.example.com'))->setCheckerDomain('name.domain.mta');
-        $state = new State\MailFromState($environment, FakeDnsResoler::create()->setFakeReverseLookups(['10.20.30.40' => 'resolved.sender.domain.com']));
+        $environment = new Environment('10.20.30.40', 'helo.sender.example.com', 'john-doe@sender.email.address.com', 'name.domain.mta');
+        $state = new State\MailFromState(
+            $environment,
+            FakeDnsResoler::create()->setFakeReverseLookups(['10.20.30.40' => 'resolved.sender.domain.com'])
+        );
         $stateIPv6 = clone $state;
-        $stateIPv6->getEnvoronment()->setSMTPClientIP('1234:abcd::ab12');
+        $stateIPv6 = new State\MailFromState(
+            new Environment('1234:abcd::ab12', $environment->getHeloDomain(), $environment->getMailFrom(), $environment->getCheckerDomain()),
+            FakeDnsResoler::create()->setFakeReverseLookups(['10.20.30.40' => 'resolved.sender.domain.com'])
+        );
         $recordDomain = 'spf.example.org';
 
         return [
@@ -337,15 +343,15 @@ class PlaceholderExpansionTest extends TestCase
         return [
             [Placeholder::ML_SENDER],
             [Placeholder::ML_SENDER_LOCAL_PART, Placeholder::ML_SENDER],
-            [Placeholder::ML_SENDER_LOCAL_PART, null, new State\MailFromState(new Environment('', 'invalid'), FakeDnsResoler::create())],
+            [Placeholder::ML_SENDER_LOCAL_PART, null, new State\MailFromState(new Environment('', 'invalid', 'invalid'), FakeDnsResoler::create())],
             [Placeholder::ML_SENDER_DOMAIN, Placeholder::ML_SENDER],
-            [Placeholder::ML_SENDER_DOMAIN, null, new State\MailFromState(new Environment('', 'invalid'), FakeDnsResoler::create())],
+            [Placeholder::ML_SENDER_DOMAIN, null, new State\MailFromState(new Environment('', 'invalid', 'invalid'), FakeDnsResoler::create())],
             [Placeholder::ML_IP],
             [Placeholder::ML_IP_VALIDATED_DOMAIN],
             [Placeholder::ML_IP_TYPE, Placeholder::ML_IP],
             [Placeholder::ML_HELO_DOMAIN],
             [Placeholder::ML_SMTP_CLIENT_IP, Placeholder::ML_IP],
-            [Placeholder::ML_CHECKER_DOMAIN, null, new State\MailFromState((new Environment('', ''))->setCheckerDomain(''), FakeDnsResoler::create())],
+            [Placeholder::ML_CHECKER_DOMAIN, null, new State\MailFromState(new Environment('', '', '', ''), FakeDnsResoler::create())],
         ];
     }
 

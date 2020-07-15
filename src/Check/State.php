@@ -40,7 +40,7 @@ abstract class State
      *
      * @var string
      */
-    private $smtpClientIPDomain = '';
+    private $clientIPDomain = '';
 
     /**
      * Cache the DNS reverse lookups already performed.
@@ -66,11 +66,6 @@ abstract class State
     {
         $this->environment = $environment;
         $this->resolver = $resolver;
-    }
-
-    public function __clone()
-    {
-        $this->environment = clone $this->getEnvoronment();
     }
 
     /**
@@ -123,9 +118,9 @@ abstract class State
      *
      * @throws \SPFLib\Exception\TooManyDNSLookupsException if too many DNS queries have been performed
      */
-    public function getSMTPClientIPDomain(): string
+    public function getClientIPDomain(): string
     {
-        $ip = $this->getEnvoronment()->getSMTPClientIP();
+        $ip = $this->getEnvoronment()->getClientIP();
         if ($ip === null) {
             return '';
         }

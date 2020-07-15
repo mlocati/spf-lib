@@ -66,7 +66,7 @@ class CheckerTest extends TestCase
             ->setFakeReverseLookups([
             ])
         ;
-        $environment = new Environment('10.20.30.40', 'john-doe.jr@mail.from.com', 'helo.ehlo.domain');
+        $environment = new Environment('10.20.30.40', 'helo.ehlo.domain', 'john-doe.jr@mail.from.com');
 
         return [
             // 0
@@ -82,7 +82,7 @@ class CheckerTest extends TestCase
             // 1
             [
                 $emptyResolver,
-                (clone $environment)->setSMTPClientIP(''),
+                new Environment('', $environment->getHeloDomain(), $environment->getMailFrom(), $environment->getCheckerDomain()),
                 Result::CODE_NONE,
                 '',
                 '',
@@ -91,7 +91,7 @@ class CheckerTest extends TestCase
             // 2
             [
                 $emptyResolver,
-                (clone $environment)->setMailFrom(''),
+                new Environment($environment->getClientIP(), $environment->getHeloDomain(), '', $environment->getCheckerDomain()),
                 Result::CODE_NONE,
                 '',
                 '',
@@ -100,7 +100,7 @@ class CheckerTest extends TestCase
             // 3
             [
                 $emptyResolver,
-                (clone $environment)->setHeloDomain(''),
+                new Environment($environment->getClientIP(), '', $environment->getMailFrom(), $environment->getCheckerDomain()),
                 Result::CODE_NONE,
                 '',
                 '',
@@ -119,7 +119,7 @@ class CheckerTest extends TestCase
             // 5
             [
                 $resolver,
-                (clone $environment)->setMailFrom('john-doe.jr@mail1.from.com'),
+                new Environment($environment->getClientIP(), $environment->getHeloDomain(), 'john-doe.jr@mail1.from.com', $environment->getCheckerDomain()),
                 Result::CODE_PASS,
                 Mechanism\Ip4Mechanism::class,
                 '',
@@ -128,7 +128,7 @@ class CheckerTest extends TestCase
             // 6
             [
                 $resolver,
-                (clone $environment)->setMailFrom('john-doe.jr@mail1.from.com')->setSMTPClientIP('127.0.0.1'),
+                new Environment('127.0.0.1', $environment->getHeloDomain(), 'john-doe.jr@mail1.from.com', $environment->getCheckerDomain()),
                 Result::CODE_FAIL,
                 Mechanism\AllMechanism::class,
                 'john-doe.jr access denied at mail1.from.com via com.from.mail1._exp',
@@ -137,7 +137,7 @@ class CheckerTest extends TestCase
             // 7
             [
                 $resolver,
-                (clone $environment)->setMailFrom('john-doe.jr@mail1.from.com')->setSMTPClientIP('::3'),
+                new Environment('::3', $environment->getHeloDomain(), 'john-doe.jr@mail1.from.com', $environment->getCheckerDomain()),
                 Result::CODE_SOFTFAIL,
                 Mechanism\Ip6Mechanism::class,
                 'john-doe.jr access denied at mail1.from.com via com.from.mail1._exp',
@@ -146,7 +146,7 @@ class CheckerTest extends TestCase
             // 8
             [
                 $resolver,
-                (clone $environment)->setMailFrom('john-doe.jr@recursive1.recdomain.com'),
+                new Environment($environment->getClientIP(), $environment->getHeloDomain(), 'john-doe.jr@recursive1.recdomain.com', $environment->getCheckerDomain()),
                 Result::CODE_ERROR_PERMANENT,
                 '',
                 '',
@@ -155,7 +155,7 @@ class CheckerTest extends TestCase
             // 9
             [
                 $resolver,
-                (clone $environment)->setSMTPClientIP('::a')->setMailFrom('john-doe.jr@mail1.from.com')->setHeloDomain('mail1.from.com'),
+                new Environment('::a', 'mail1.from.com', 'john-doe.jr@mail1.from.com', $environment->getCheckerDomain()),
                 Result::CODE_FAIL,
                 Mechanism\AllMechanism::class,
                 'postmaster access denied at mail1.from.com via com.from.mail1._exp',
@@ -165,7 +165,7 @@ class CheckerTest extends TestCase
             // 10
             [
                 $resolver,
-                (clone $environment)->setSMTPClientIP('::a')->setMailFrom('john-doe.jr@mail1.from.com')->setHeloDomain('mail2.from.com'),
+                new Environment('::a', 'mail2.from.com', 'john-doe.jr@mail1.from.com', $environment->getCheckerDomain()),
                 Result::CODE_FAIL,
                 Mechanism\AllMechanism::class,
                 '',
@@ -175,7 +175,7 @@ class CheckerTest extends TestCase
             // 11
             [
                 $resolver,
-                (clone $environment)->setMailFrom('john-doe.jr@mail2.from.com')->setHeloDomain('mail1.from.com'),
+                new Environment($environment->getClientIP(), 'mail1.from.com', 'john-doe.jr@mail2.from.com', $environment->getCheckerDomain()),
                 Result::CODE_PASS,
                 Mechanism\Ip4Mechanism::class,
                 '',
@@ -185,7 +185,7 @@ class CheckerTest extends TestCase
             // 12
             [
                 $resolver,
-                (clone $environment)->setMailFrom('john-doe.jr@invalid.spf.com'),
+                new Environment($environment->getClientIP(), $environment->getHeloDomain(), 'john-doe.jr@invalid.spf.com', $environment->getCheckerDomain()),
                 Result::CODE_ERROR_PERMANENT,
                 '',
                 '',
@@ -194,7 +194,7 @@ class CheckerTest extends TestCase
             // 13
             [
                 $resolver,
-                (clone $environment)->setMailFrom('john-doe.jr@neutral.spf.com'),
+                new Environment($environment->getClientIP(), $environment->getHeloDomain(), 'john-doe.jr@neutral.spf.com', $environment->getCheckerDomain()),
                 Result::CODE_NEUTRAL,
                 Mechanism\AllMechanism::class,
                 '',
@@ -203,7 +203,7 @@ class CheckerTest extends TestCase
             // 14
             [
                 $resolver,
-                (clone $environment)->setMailFrom('john-doe.jr@redirect.to.notexisting'),
+                new Environment($environment->getClientIP(), $environment->getHeloDomain(), 'john-doe.jr@redirect.to.notexisting', $environment->getCheckerDomain()),
                 Result::CODE_ERROR_PERMANENT,
                 '',
                 '',
@@ -212,7 +212,7 @@ class CheckerTest extends TestCase
             // 15
             [
                 $resolver,
-                (clone $environment)->setMailFrom('john-doe.jr@empty.spf.com'),
+                new Environment($environment->getClientIP(), $environment->getHeloDomain(), 'john-doe.jr@empty.spf.com', $environment->getCheckerDomain()),
                 Result::CODE_NEUTRAL,
                 '',
                 '',
@@ -221,7 +221,7 @@ class CheckerTest extends TestCase
             // 16
             [
                 $resolver,
-                (clone $environment)->setMailFrom('john-doe.jr@recursive1.recdomain.com')->setHeloDomain('recursive2.recdomain.com'),
+                new Environment($environment->getClientIP(), 'recursive2.recdomain.com', 'john-doe.jr@recursive1.recdomain.com', $environment->getCheckerDomain()),
                 Result::CODE_ERROR_PERMANENT,
                 '',
                 '',
@@ -231,7 +231,7 @@ class CheckerTest extends TestCase
             // 17
             [
                 $resolver,
-                (clone $environment)->setMailFrom('john-doe.jr@a.default.spf.com'),
+                new Environment($environment->getClientIP(), $environment->getHeloDomain(), 'john-doe.jr@a.default.spf.com', $environment->getCheckerDomain()),
                 Result::CODE_NEUTRAL,
                 '',
                 '',
@@ -240,7 +240,7 @@ class CheckerTest extends TestCase
             // 18
             [
                 $resolver,
-                (clone $environment)->setMailFrom('john-doe.jr@a.default.spf.com')->setSMTPClientIP('a:b::c:d'),
+                new Environment('a:b::c:d', $environment->getHeloDomain(), 'john-doe.jr@a.default.spf.com', $environment->getCheckerDomain()),
                 Result::CODE_PASS,
                 Mechanism\AMechanism::class,
                 '',
@@ -249,7 +249,7 @@ class CheckerTest extends TestCase
             // 19
             [
                 $resolver,
-                (clone $environment)->setMailFrom('john-doe.jr@a.default.spf.com')->setSMTPClientIP('a:b::c:1'),
+                new Environment('a:b::c:1', $environment->getHeloDomain(), 'john-doe.jr@a.default.spf.com', $environment->getCheckerDomain()),
                 Result::CODE_NEUTRAL,
                 '',
                 '',
@@ -258,7 +258,7 @@ class CheckerTest extends TestCase
             // 19
             [
                 $resolver,
-                (clone $environment)->setMailFrom('john-doe.jr@a.cidr.spf.com')->setSMTPClientIP('a:b::c:1'),
+                new Environment('a:b::c:1', $environment->getHeloDomain(), 'john-doe.jr@a.cidr.spf.com', $environment->getCheckerDomain()),
                 Result::CODE_PASS,
                 Mechanism\AMechanism::class,
                 '',
