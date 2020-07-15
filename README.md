@@ -67,6 +67,24 @@ Otherwise you can specify an empty string in the related `Environment` construct
 - the failure description, if provided by the SPF records (`$checkResult->getFailExplanation()`)
 - optional relevant messages from the check process (`$checkResult->getMessages()`)
 
+So, the simplest example is:
+
+```php
+use SPFLib\Checker;
+use SPFLib\Check\Environment;
+
+$checker = new Checker();
+$checkResult = $checker->check(new Environment('127.0.0.1', 'gmail.com'));
+echo $checkResult->getCode();
+```
+
+which outputs
+
+```
+softfail
+```
+
+
 ### Retrieving the SPF record from a domain name
 
 An SPF record is composed by zero or more terms. Every term can be a mechanism or a modifier.
