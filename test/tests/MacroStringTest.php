@@ -41,12 +41,14 @@ class PlaceholderExpansionTest extends TestCase
         $environment = new Environment('10.20.30.40', 'helo.sender.example.com', 'john-doe@sender.email.address.com', 'name.domain.mta');
         $state = new State\MailFromState(
             $environment,
-            FakeDnsResoler::create()->setFakeReverseLookups(['10.20.30.40' => 'resolved.sender.domain.com'])
+            FakeDnsResoler::create()
+                ->setFakePTRRecords(['40.30.20.10.in-addr.arpa' => ['resolved.sender.email.address.com']])
+                ->setFakeForwardLookups(['resolved.sender.email.address.com' => ['10.20.30.40']])
         );
         $stateIPv6 = clone $state;
         $stateIPv6 = new State\MailFromState(
             new Environment('1234:abcd::ab12', $environment->getHeloDomain(), $environment->getMailFrom(), $environment->getCheckerDomain()),
-            FakeDnsResoler::create()->setFakeReverseLookups(['10.20.30.40' => 'resolved.sender.domain.com'])
+            FakeDnsResoler::create()->setFakePTRRecords(['40.30.20.10.in-addr.arpa' => ['sender.example.com']])
         );
         $recordDomain = 'spf.example.org';
 
@@ -185,7 +187,7 @@ class PlaceholderExpansionTest extends TestCase
                 [new Placeholder(Placeholder::ML_IP_VALIDATED_DOMAIN)],
                 $state,
                 $recordDomain,
-                'resolved.sender.domain.com',
+                'resolved.sender.email.address.com',
             ],
             // 17
             [
@@ -193,7 +195,7 @@ class PlaceholderExpansionTest extends TestCase
                 [new Placeholder(Placeholder::ML_IP_VALIDATED_DOMAIN, 2)],
                 $state,
                 $recordDomain,
-                'domain.com',
+                'address.com',
             ],
             // 18
             [
@@ -201,7 +203,7 @@ class PlaceholderExpansionTest extends TestCase
                 [new Placeholder(Placeholder::ML_IP_VALIDATED_DOMAIN, null, true)],
                 $state,
                 $recordDomain,
-                'com.domain.sender.resolved',
+                'com.address.email.sender.resolved',
             ],
             // 19
             [
@@ -325,7 +327,7 @@ class PlaceholderExpansionTest extends TestCase
      */
     public function testValidPlaceholderCase(string $dnsMacroString, array $expectedPlaceholders, State $state, string $domain, string $expectedResult, bool $isRegex = false, $decoderFlags = Decoder::FLAG_EXP): void
     {
-        $state->resetDNSLookupsCount();
+        $state->resetDNSQueryCounters();
         $macroString = self::$decoder->decode($dnsMacroString, $decoderFlags);
         $expectedMacroString = new MacroString($expectedPlaceholders);
         $this->assertEquals($expectedMacroString, $macroString);
@@ -347,7 +349,7 @@ class PlaceholderExpansionTest extends TestCase
             [Placeholder::ML_SENDER_DOMAIN, Placeholder::ML_SENDER],
             [Placeholder::ML_SENDER_DOMAIN, null, new State\MailFromState(new Environment('', 'invalid', 'invalid'), FakeDnsResoler::create())],
             [Placeholder::ML_IP],
-            [Placeholder::ML_IP_VALIDATED_DOMAIN],
+            [Placeholder::ML_IP_VALIDATED_DOMAIN, Placeholder::ML_IP],
             [Placeholder::ML_IP_TYPE, Placeholder::ML_IP],
             [Placeholder::ML_HELO_DOMAIN],
             [Placeholder::ML_SMTP_CLIENT_IP, Placeholder::ML_IP],

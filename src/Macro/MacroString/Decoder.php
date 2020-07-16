@@ -28,7 +28,7 @@ class Decoder
     public const FLAG_ALLOWEMPTY = 0b0001;
 
     /**
-     * Decoder flag: the MacroString is for an "exp" modifier.
+     * Decoder flag: the MacroString is for the final value of an "exp" modifier.
      *
      * @var int
      */
@@ -75,11 +75,12 @@ class Decoder
             '(?P<macroLetter>[' . preg_quote($this->getAllowedPlaceholderChars($flags), '/') . '])',
             '(?P<numOutputParts>\d*)',
             '(?P<reverse>r?)',
-            '(?P<delimiter>[' . preg_quote($this->getAllowedDelimiters($flags), '/') . ']?)',
+            '(?P<delimiters>[' . preg_quote($this->getAllowedDelimiters($flags), '/') . ']*)',
             '\}',
         ]);
         $matches = null;
         $currentLiteralString = '';
+        $minLiteralAscii = ($flags & static::FLAG_EXP) ? 0x20 : 0x21;
         for ($index = 0; $index < $length; $index++) {
             $char = $string[$index];
             if ($char === '%') {
@@ -97,7 +98,7 @@ class Decoder
                     throw new Exception\InvalidMacroStringException($string, $index, "The macro-string '{$string}' contains a misplaced '%' character at position {$index}");
                 }
                 $substr = substr($string, $nextIndex);
-                if (!preg_match("/^{$placeholderRegex}/", $substr, $matches)) {
+                if (!preg_match("/^{$placeholderRegex}/i", $substr, $matches)) {
                     throw new Exception\InvalidMacroStringException($string, $index, "The macro-string '{$string}' contains an unrecognized macro-expand string at position {$index}");
                 }
                 $numOutputParts = $matches['numOutputParts'] === '' ? null : (int) $matches['numOutputParts'];
@@ -108,12 +109,12 @@ class Decoder
                     $result->addChunk(new Chunk\LiteralString($currentLiteralString));
                     $currentLiteralString = '';
                 }
-                $result->addChunk(new Chunk\Placeholder($matches['macroLetter'], $numOutputParts, $matches['reverse'] !== '', $matches['delimiter']));
+                $result->addChunk(new Chunk\Placeholder($matches['macroLetter'], $numOutputParts, $matches['reverse'] !== '', $matches['delimiters']));
                 $index += strlen($matches[0]);
                 continue;
             }
             $ord = ord($char);
-            if ($ord < 0x21 || $ord > 0x7e) {
+            if ($ord < $minLiteralAscii || $ord > 0x7e) {
                 throw new Exception\InvalidMacroStringException($string, $index, "The macro-string '{$string}' contains an invalid character (ASCII code: {$ord}) at the position {$index}");
             }
             $currentLiteralString .= $char;

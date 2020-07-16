@@ -6,7 +6,6 @@ namespace SPFLib\DNS;
 
 use Closure;
 use IPLib\Address\AddressInterface;
-use IPLib\Address\IPv4;
 use IPLib\Factory;
 use MLocati\IDNA\DomainName;
 use MLocati\IDNA\Exception\Exception as IDNAException;
@@ -95,25 +94,14 @@ class StandardResolver implements Resolver
      *
      * @see \SPFLib\DNS\Resolver::getPTRRecords()
      */
-    public function getPTRRecords(AddressInterface $ip): array
+    public function getPTRRecords(string $domain): array
     {
-        if ($ip instanceof IPv4) {
-            $domain = implode(
-                '.',
-                array_reverse($ip->getBytes())
-            ) . '.in-addr.arpa';
-        } else {
-            $domain = implode(
-                '.',
-                array_reverse(str_split(str_replace(':', '', $ip->toString(true)), 1))
-            ) . '.ip6.arpa';
-        }
         $error = 'Unknown error';
         $records = $this->callWithErrorHandler(static function () use ($domain) {
             return dns_get_record($domain, DNS_PTR);
         }, $error);
         if ($records === false) {
-            throw new DNSResolutionException($domain, "Failed to get the PTR records for {$ip}: {$error}");
+            throw new DNSResolutionException($domain, "Failed to get the PTR records for {$domain}: {$error}");
         }
         $results = [];
         foreach ($records as $record) {

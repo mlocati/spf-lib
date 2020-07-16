@@ -39,13 +39,13 @@ interface Resolver
     public function getMXRecords(string $domain): array;
 
     /**
-     * Get the value of the PTR DNS records for an IP address.
+     * Get the value of the PTR DNS records for a domain.
      *
      * @throws \SPFLib\Exception\DNSResolutionException in case of DNS resolution errors
      *
      * @return string[]
      */
-    public function getPTRRecords(AddressInterface $ip): array;
+    public function getPTRRecords(string $domain): array;
 
     /**
      * Get the domain name associated to an IP address by performing a reverse IP lookup.
