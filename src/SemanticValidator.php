@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace SPFLib;
 
 use SPFLib\Check\State;
+use SPFLib\Macro\MacroString\Chunk;
 use SPFLib\Semantic\Issue;
 use SPFLib\Term\Mechanism;
 use SPFLib\Term\Modifier;
+use SPFLib\Term\TermWithDomainSpec;
 
 /**
  * An RFC7208-compliant semantic validator.
@@ -31,6 +33,7 @@ class SemanticValidator
             $this->checkAllIsLastMechanism($record),
             $this->checkAllAndRedirect($record),
             $this->checkNoPtr($record),
+            $this->checkNoValidatedDomain($record),
             $this->checkModifiersPosition($record),
             $this->checkModifiersUniqueness($record),
             $this->checkUnknownModifiers($record)
@@ -173,6 +176,30 @@ class SemanticValidator
         return [];
     }
 
+    protected function checkNoValidatedDomain(Record $record): array
+    {
+        $result = [];
+        foreach ($record->getTerms() as $term) {
+            if ($term instanceof TermWithDomainSpec) {
+                $domainSpec = $term->getDomainSpec();
+                foreach ($domainSpec->getChunks() as $chunk) {
+                    if ($chunk instanceof Chunk\Placeholder) {
+                        if (strtolower($chunk->getMacroLetter()) === Chunk\Placeholder::ML_IP_VALIDATED_DOMAIN) {
+                            $result[] = new Issue(
+                                $record,
+                                Issue::CODE_SHOULD_AVOID_VALIDATED_DOMAIN_MACRO,
+                                "The term '{$term}' contains macro-letter '{$chunk->getMacroLetter()}' that shouldn't be used because it's slow, resource intensive, and not very reliable",
+                                Issue::LEVEL_NOTICE
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        return $result;
+    }
+
     /**
      * @return \SPFLib\Semantic\Issue[]
      *
@@ -248,7 +275,7 @@ class SemanticValidator
             if ($modifier instanceof Modifier\UnknownModifier) {
                 $result[] = new Issue(
                     $record,
-                    Issue::UNKNOWN_MODIFIER,
+                    Issue::CODE_UNKNOWN_MODIFIER,
                     "The '{$modifier}' modifier is unknown",
                     Issue::LEVEL_NOTICE
                 );

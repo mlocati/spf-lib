@@ -165,7 +165,8 @@ v=spf1 mx include:example.com -all
 ### Checking problems with an SPF record
 
 ```php
-$record = (new \SPFLib\Decoder())->getRecordFromTXT('v=spf1 all redirect=example1.org redirect=example2.org ptr:foo.bar mx include=example3.org');
+$spf = 'v=spf1 all redirect=example1.org redirect=example2.org ptr:foo.bar mx include=example3.org exp=test.%{p}';
+$record = (new \SPFLib\Decoder())->getRecordFromTXT($spf);
 $issues = (new \SPFLib\SemanticValidator())->validate($record);
 foreach ($issues as $issue) {
     echo (string) $issue, "\n";
@@ -178,6 +179,7 @@ Output:
 [warning] 'all' should be the last mechanism (any other mechanism will be ignored)
 [warning] The 'redirect' modifier will be ignored since there's a 'all' mechanism
 [notice] The 'ptr' mechanism shouldn't be used because it's slow, resource intensive, and not very reliable
+[notice] The term 'exp=test.%{p}' contains macro-letter 'p' that shouldn't be used because it's slow, resource intensive, and not very reliable
 [notice] The modifiers ('redirect=example1.org', 'redirect=example2.org') should be after all the mechanisms
 [fatal] The 'redirect' modifier is present more than once (2 times)
 [notice] The 'include=example3.org' modifier is unknown

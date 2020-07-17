@@ -6,13 +6,14 @@ namespace SPFLib\Term\Mechanism;
 
 use SPFLib\Macro\MacroString;
 use SPFLib\Term\Mechanism;
+use SPFLib\Term\TermWithDomainSpec;
 
 /**
  * Class that represents the "ptr" mechanism.
  *
  * @see https://tools.ietf.org/html/rfc7208#section-5.5
  */
-class PtrMechanism extends Mechanism
+class PtrMechanism extends Mechanism implements TermWithDomainSpec
 {
     /**
      * The handle that identifies this mechanism.
@@ -72,6 +73,11 @@ class PtrMechanism extends Mechanism
         return static::HANDLE;
     }
 
+    /**
+     * {@inheritdoc}
+     *
+     * @see \SPFLib\Term\TermWithDomainSpec::getDomainSpec()
+     */
     public function getDomainSpec(): MacroString
     {
         return $this->domainSpec;
