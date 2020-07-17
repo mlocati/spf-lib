@@ -58,7 +58,14 @@ class Issue
      *
      * @var int
      */
-    public const UNKNOWN_MODIFIER = 7;
+    public const CODE_UNKNOWN_MODIFIER = 7;
+
+    /**
+     * Semantic warning code: a macro-string contains the "p" (validated domain) macro-letter, which should be avoided (it's slow, expensive, unreliable).
+     *
+     * @var int
+     */
+    public const CODE_SHOULD_AVOID_VALIDATED_DOMAIN_MACRO = 8;
 
     /**
      * Issue level: notice (can be ignored).

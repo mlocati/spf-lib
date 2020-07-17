@@ -154,7 +154,19 @@ class SemanticValidatorTest extends TestCase
             [
                 'v=spf1 mx include=foo',
                 [
-                    Issue::UNKNOWN_MODIFIER,
+                    Issue::CODE_UNKNOWN_MODIFIER,
+                ],
+            ],
+            [
+                'v=spf1 all redirect=example1.org redirect=example2.org ptr:foo.bar mx include=example3.org exp=from.%{p}',
+                [
+                    Issue::CODE_ALL_NOT_LAST_MECHANISM,
+                    Issue::CODE_ALL_AND_REDIRECT,
+                    Issue::CODE_SHOULD_AVOID_PTR,
+                    Issue::CODE_MODIFIER_NOT_AFTER_MECHANISMS,
+                    Issue::CODE_DUPLICATED_MODIFIER,
+                    Issue::CODE_UNKNOWN_MODIFIER,
+                    Issue::CODE_SHOULD_AVOID_VALIDATED_DOMAIN_MACRO,
                 ],
             ],
             [
@@ -165,18 +177,7 @@ class SemanticValidatorTest extends TestCase
                     Issue::CODE_SHOULD_AVOID_PTR,
                     Issue::CODE_MODIFIER_NOT_AFTER_MECHANISMS,
                     Issue::CODE_DUPLICATED_MODIFIER,
-                    Issue::UNKNOWN_MODIFIER,
-                ],
-            ],
-            [
-                'v=spf1 all redirect=example1.org redirect=example2.org ptr:foo.bar mx include=example3.org',
-                [
-                    Issue::CODE_ALL_NOT_LAST_MECHANISM,
-                    Issue::CODE_ALL_AND_REDIRECT,
-                    Issue::CODE_SHOULD_AVOID_PTR,
-                    Issue::CODE_MODIFIER_NOT_AFTER_MECHANISMS,
-                    Issue::CODE_DUPLICATED_MODIFIER,
-                    Issue::UNKNOWN_MODIFIER,
+                    Issue::CODE_UNKNOWN_MODIFIER,
                 ],
                 Issue::LEVEL_NOTICE,
             ],

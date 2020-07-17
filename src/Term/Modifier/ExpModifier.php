@@ -6,13 +6,14 @@ namespace SPFLib\Term\Modifier;
 
 use SPFLib\Macro\MacroString;
 use SPFLib\Term\Modifier;
+use SPFLib\Term\TermWithDomainSpec;
 
 /**
  * Class that represents the "exp" modifier.
  *
  * @see https://tools.ietf.org/html/rfc7208#section-6.2
  */
-class ExpModifier extends Modifier
+class ExpModifier extends Modifier implements TermWithDomainSpec
 {
     /**
      * The handle that identifies this modifier.
@@ -66,6 +67,11 @@ class ExpModifier extends Modifier
         return static::HANDLE;
     }
 
+    /**
+     * {@inheritdoc}
+     *
+     * @see \SPFLib\Term\TermWithDomainSpec::getDomainSpec()
+     */
     public function getDomainSpec(): MacroString
     {
         return $this->domainSpec;
