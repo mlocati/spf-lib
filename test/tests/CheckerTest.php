@@ -95,7 +95,7 @@ class CheckerTest extends TestCase
                 Result::CODE_NONE,
                 '',
                 '',
-                '/MAIL FROM.+not valid/',
+                '/domain.+empty/',
             ],
             // 3
             [
@@ -104,7 +104,7 @@ class CheckerTest extends TestCase
                 Result::CODE_NONE,
                 '',
                 '',
-                '/HELO.+EHLO.+not valid/',
+                '/domain.+empty/',
                 Checker::FLAG_CHECK_HELODOMAIN,
             ],
             // 4
@@ -158,7 +158,7 @@ class CheckerTest extends TestCase
                 new Environment('::a', 'mail1.from.com', 'john-doe.jr@mail1.from.com', $environment->getCheckerDomain()),
                 Result::CODE_FAIL,
                 Mechanism\AllMechanism::class,
-                'postmaster access denied at mail1.from.com via com.from.mail1._exp',
+                'john-doe.jr access denied at mail1.from.com via com.from.mail1._exp',
                 '/^$/',
                 Checker::FLAG_CHECK_MAILFROADDRESS | Checker::FLAG_CHECK_HELODOMAIN,
             ],
@@ -168,18 +168,18 @@ class CheckerTest extends TestCase
                 new Environment('::a', 'mail2.from.com', 'john-doe.jr@mail1.from.com', $environment->getCheckerDomain()),
                 Result::CODE_FAIL,
                 Mechanism\AllMechanism::class,
-                '',
-                "/no TXT records for '_exp.mail2.from.com/i",
+                'john-doe.jr access denied at mail1.from.com via com.from.mail1._exp',
+                '/^$/',
                 Checker::FLAG_CHECK_MAILFROADDRESS | Checker::FLAG_CHECK_HELODOMAIN,
             ],
             // 11
             [
                 $resolver,
                 new Environment($environment->getClientIP(), 'mail1.from.com', 'john-doe.jr@mail2.from.com', $environment->getCheckerDomain()),
-                Result::CODE_PASS,
-                Mechanism\Ip4Mechanism::class,
+                Result::CODE_FAIL,
+                Mechanism\AllMechanism::class,
                 '',
-                '/^$/',
+                '/no TXT records\b.*\b_exp.mail2.from.com\b/',
                 Checker::FLAG_CHECK_MAILFROADDRESS | Checker::FLAG_CHECK_HELODOMAIN,
             ],
             // 12

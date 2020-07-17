@@ -71,8 +71,6 @@ class Expander
             $placeholder,
             $this->getPlaceholderValue($placeholder->getMacroLetter(), $currentDomain, $state)
         );
-
-        return $this->transform($this->getEnvironmentValue($state, $currentDomain));
     }
 
     /**
@@ -82,7 +80,7 @@ class Expander
     protected function getPlaceholderValue(string $macroLetter, string $currentDomain, State $state): string
     {
         $value = '';
-        switch ($macroLetter) {
+        switch (strtolower($macroLetter)) {
             case Chunk\Placeholder::ML_SENDER:
                 $value = $state->getSender();
                 break;
@@ -112,7 +110,10 @@ class Expander
                 }
                 break;
             case Chunk\Placeholder::ML_IP_VALIDATED_DOMAIN:
-                $value = $state->getClientIPDomain();
+                $value = $state->getValidatedDomain($state->getSenderDomain(), true);
+                if ($value === '') {
+                    $value = 'unknown';
+                }
                 break;
             case Chunk\Placeholder::ML_IP_TYPE:
                 $ip = $state->getEnvoronment()->getClientIP();
@@ -145,6 +146,9 @@ class Expander
         if ($value === '') {
             throw new Exception\MissingEnvironmentValueException($macroLetter);
         }
+        if ($macroLetter === strtoupper($macroLetter)) {
+            $value = $this->urlEncode($value);
+        }
 
         return $value;
     }
@@ -153,11 +157,14 @@ class Expander
     {
         $numOutputParts = $placeholder->getNumOutputParts();
         $reverse = $placeholder->isReverse();
-        $delimiter = $placeholder->getDelimiter();
-        if ($numOutputParts === null && $reverse === false && $delimiter === '') {
+        $delimiters = $placeholder->getDelimiters();
+        if ($numOutputParts === null && $reverse === false && $delimiters === '') {
             return $value;
         }
-        $parts = explode($delimiter === '' ? '.' : $delimiter, $value);
+        if ($delimiters === '') {
+            $delimiters = '.';
+        }
+        $parts = preg_split('/[' . preg_quote($delimiters, '/') . ']/', $value);
         if ($reverse) {
             $parts = array_reverse($parts, false);
         }
@@ -170,5 +177,19 @@ class Expander
         }
 
         return implode('.', $parts);
+    }
+
+    /**
+     * @see https://tools.ietf.org/html/rfc3986#section-2.3
+     */
+    protected function urlEncode(string $value): string
+    {
+        return preg_replace_callback(
+            '/[^\w\-\.~]/',
+            static function (array $match): string {
+                return '%' . substr('0' . strtolower(dechex(ord($match[0]))), -2);
+            },
+            $value
+        );
     }
 }

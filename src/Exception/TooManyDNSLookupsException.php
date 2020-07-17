@@ -24,6 +24,7 @@ class TooManyDNSLookupsException extends Exception
     public function __construct(int $maxDnsLookups)
     {
         parent::__construct("Too many DNS lookups have been performed (max limit is {$maxDnsLookups})");
+        $this->maxDnsLookups = $maxDnsLookups;
     }
 
     /**

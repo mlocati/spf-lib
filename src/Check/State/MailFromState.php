@@ -18,6 +18,11 @@ class MailFromState extends State
      */
     public function getSender(): string
     {
-        return $this->getEnvoronment()->getMailFrom();
+        $mailFrom = $this->getEnvoronment()->getMailFrom();
+        if (($mailFrom[0] ?? '') === '@') {
+            $mailFrom = 'postmaster' . $mailFrom;
+        }
+
+        return $mailFrom;
     }
 }

@@ -92,14 +92,14 @@ class Placeholder extends Chunk
     public const ML_CURRENT_TIMESTAMP = 't';
 
     /**
-     * The placeholder identifier (the value of one of the Placeholder::ML_... constants).
+     * The placeholder identifier (the value of one of the Placeholder::ML_... constants, case-insensitive)).
      *
      * @var string
      */
     private $macroLetter;
 
     /**
-     * The number of parts of the output, after applying the environment values, splitting by $delimiter (NULL or greater than 0).
+     * The number of parts of the output, after applying the environment values, splitting by $delimiters (NULL or greater than 0).
      *
      * @var int|null
      */
@@ -113,27 +113,27 @@ class Placeholder extends Chunk
     private $reverse;
 
     /**
-     * The character to be used to split the output (if empty, we'll assume '.').
+     * The character(s) to be used to split the output (if empty, we'll assume '.').
      * It can be one of: '.' / '-' / '+' / ',' / '/' / '_' / '='.
      *
      * @var string
      */
-    private $delimiter;
+    private $delimiters;
 
     /**
      * Initialize the instance.
      *
-     * @param string $macroLetter the placeholder identifier (the value of one of the Placeholder::ML_... constants)
-     * @param int|null $numOutputParts the number of parts of the output, after applying the environment values, splitting by $delimiter (NULL or greater than 0)
+     * @param string $macroLetter the placeholder identifier (the value of one of the Placeholder::ML_... constants, case-insensitive)
+     * @param int|null $numOutputParts the number of parts of the output, after applying the environment values, splitting by $delimiters (NULL or greater than 0)
      * @param bool $reverse Should the output be reversed?
-     * @param string $delimiter the character to be used to split the output (if empty, we'll assume '.', it can be one of: '.' / '-' / '+' / ',' / '/' / '_' / '=')
+     * @param string $delimiters the character(s) to be used to split the output (if empty, we'll assume '.', it can be one of: '.' / '-' / '+' / ',' / '/' / '_' / '=')
      */
-    public function __construct(string $macroLetter, ?int $numOutputParts = null, bool $reverse = false, string $delimiter = '')
+    public function __construct(string $macroLetter, ?int $numOutputParts = null, bool $reverse = false, string $delimiters = '')
     {
         $this->macroLetter = $macroLetter;
         $this->numOutputParts = $numOutputParts;
         $this->reverse = $reverse;
-        $this->delimiter = $delimiter;
+        $this->delimiters = $delimiters;
     }
 
     /**
@@ -148,13 +148,13 @@ class Placeholder extends Chunk
             $this->getMacroLetter(),
             (string) ($this->getNumOutputParts() ?: ''),
             $this->isReverse() ? 'r' : '',
-            $this->getDelimiter(),
+            $this->getDelimiters(),
             '}',
         ]);
     }
 
     /**
-     * Get the placeholder identifier (the value of one of the Placeholder::ML_... constants).
+     * Get the placeholder identifier (the value of one of the Placeholder::ML_... constants, case-insensitive).
      */
     public function getMacroLetter(): string
     {
@@ -162,7 +162,7 @@ class Placeholder extends Chunk
     }
 
     /**
-     * Get the number of parts of the output, after applying the environment values, splitting by $delimiter (NULL or greater than 0).
+     * Get the number of parts of the output, after applying the environment values, splitting by $delimiters (NULL or greater than 0).
      */
     public function getNumOutputParts(): ?int
     {
@@ -178,11 +178,11 @@ class Placeholder extends Chunk
     }
 
     /**
-     * Get the character to be used to split the output (if empty, we'll assume '.').
-     * It can be one of: '.' / '-' / '+' / ',' / '/' / '_' / '='.
+     * Get the character(s) to be used to split the output (if empty, we'll assume '.').
+     * It can zero characters or more of: '.' / '-' / '+' / ',' / '/' / '_' / '='.
      */
-    public function getDelimiter(): string
+    public function getDelimiters(): string
     {
-        return $this->delimiter;
+        return $this->delimiters;
     }
 }

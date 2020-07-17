@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace SPFLib\Check;
 
+use IPLib\Address;
+use IPLib\Address\AddressInterface;
+use IPLib\Range\Subnet;
 use SPFLib\DNS\Resolver;
-use SPFLib\Exception\TooManyDNSLookupsException;
+use SPFLib\Exception;
+use SPFLib\Macro\MacroString\Chunk\Placeholder;
 
 /**
  * Class that holds the state of the check process.
@@ -20,6 +24,15 @@ abstract class State
      * @see https://tools.ietf.org/html/rfc7208#section-4.6.4
      */
     public const MAX_DNS_LOOKUPS = 10;
+
+    /**
+     * The maximum number of DNS IP lookups that returned zero addresses.
+     *
+     * @var int
+     *
+     * @see https://tools.ietf.org/html/rfc7208#section-11.1
+     */
+    public const MAX_VOID_DNS_LOOKUPS = 2;
 
     /**
      * The environment being checked.
@@ -50,11 +63,25 @@ abstract class State
     private $reverseLookups = [];
 
     /**
+     * Cache the PTR records for the client IP address.
+     *
+     * @var array|null
+     */
+    private $ptrPointers;
+
+    /**
      * The number of DNS queries already performed.
      *
      * @var int
      */
-    private $dnsLookupsCount = 0;
+    private $dnsLookupsCount;
+
+    /**
+     * The number of DNS IP lookups already performed that returned zero addresses.
+     *
+     * @var int
+     */
+    private $voidIPLookupsCount;
 
     /**
      * Initialize the instance.
@@ -66,6 +93,7 @@ abstract class State
     {
         $this->environment = $environment;
         $this->resolver = $resolver;
+        $this->resetDNSQueryCounters();
     }
 
     /**
@@ -127,7 +155,8 @@ abstract class State
         $key = (string) $ip;
         if (!isset($this->reverseLookups[$key])) {
             $this->countDNSLookup();
-            $this->reverseLookups[$key] = $this->getResolver()->getDomainNameFromIPAddress($ip);
+            $domainName = $this->getDNSResolver()->getDomainNameFromIPAddress($ip);
+            $this->reverseLookups[$key] = $domainName;
         }
 
         return $this->reverseLookups[$key];
@@ -138,9 +167,10 @@ abstract class State
      *
      * @return self
      */
-    public function resetDNSLookupsCount(): self
+    public function resetDNSQueryCounters(): self
     {
         $this->dnsLookupsCount = 0;
+        $this->voidIPLookupsCount = 0;
 
         return $this;
     }
@@ -154,15 +184,144 @@ abstract class State
     {
         $this->dnsLookupsCount += $number;
         if ($this->dnsLookupsCount > static::MAX_DNS_LOOKUPS) {
-            throw new TooManyDNSLookupsException(static::MAX_DNS_LOOKUPS);
+            throw new Exception\TooManyDNSLookupsException(static::MAX_DNS_LOOKUPS);
         }
+    }
+
+    /**
+     * Count a DNS IP lookup that returned zero addresses.
+     *
+     * @throws \SPFLib\Exception\TooManyDNSVoidLookupsException
+     */
+    public function countVoidIPLookupsCount(int $number = 1): void
+    {
+        $this->voidIPLookupsCount += $number;
+        if ($this->voidIPLookupsCount > static::MAX_VOID_DNS_LOOKUPS) {
+            throw new Exception\TooManyDNSVoidLookupsException(static::MAX_VOID_DNS_LOOKUPS);
+        }
+    }
+
+    public function getValidatedDomain(string $targetDomain, bool $allowSubdomain): string
+    {
+        $pointers = $this->getPTRPointers();
+        $targetDomainChunks = explode('.', trim($targetDomain, '.'));
+        while ($allowSubdomain === false || isset($targetDomainChunks[1])) {
+            $search = '.' . implode('.', $targetDomainChunks);
+            foreach ($pointers as $pointer) {
+                $pointerAddresses = $this->getDNSResolver()->getIPAddressesFromDomainName($pointer);
+                foreach ($pointerAddresses as $pointerAddress) {
+                    if ($this->matchIP($pointerAddress, 32, 128)) {
+                        $compare = '.' . ltrim($pointer, '.');
+                        if (strcasecmp($search, substr($compare, -strlen($search))) === 0) {
+                            return $pointer;
+                        }
+                    }
+                }
+            }
+            if ($allowSubdomain === false) {
+                break;
+            }
+            array_shift($targetDomainChunks);
+        }
+
+        return '';
+    }
+
+    /**
+     * @throws \SPFLib\Exception\DNSResolutionException
+     * @throws \SPFLib\Exception\TooManyDNSVoidLookupsException
+     */
+    public function matchDomainIPs(string $domain, ?int $ipv4CidrLength, ?int $ipv6CidrLength): bool
+    {
+        $ips = $this->getDNSResolver()->getIPAddressesFromDomainName($domain);
+        if ($ips === []) {
+            $this->countVoidIPLookupsCount();
+        } else {
+            foreach ($ips as $ip) {
+                if ($this->matchIP($ip, $ipv4CidrLength, $ipv6CidrLength)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public function matchIP(AddressInterface $check, ?int $ipv4CidrLength, ?int $ipv6CidrLength): bool
+    {
+        $clientIP = $this->getEnvoronment()->getClientIP();
+        if ($ipv4CidrLength === 0) {
+            if ($clientIP instanceof Address\IPv4 && $check instanceof Address\IPv4) {
+                return true;
+            }
+        } elseif ($ipv4CidrLength !== null) {
+            $clientIPv4 = $clientIP instanceof Address\IPv6 ? $clientIP->toIPv4() : $clientIP;
+            if ($clientIPv4 instanceof Address\IPv4) {
+                $checkIPv4 = $check instanceof Address\IPv6 ? $check->toIPv4() : $check;
+                if ($checkIPv4 instanceof Address\IPv4) {
+                    $range = Subnet::fromString("{$checkIPv4}/{$ipv4CidrLength}");
+                    if ($range !== null && $range->contains($clientIPv4)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        if ($ipv6CidrLength === 0) {
+            if ($clientIP instanceof Address\IPv6 && $check instanceof Address\IPv6) {
+                return strpos((string) $clientIP, '.') === false;
+            }
+        } elseif ($ipv6CidrLength !== null) {
+            $clientIPv6 = $clientIP instanceof Address\IPv4 ? $clientIP->toIPv6() : $clientIP;
+            if ($clientIPv6 instanceof Address\IPv6) {
+                $checkIPv4 = $check instanceof Address\IPv4 ? $check->toIPv6() : $check;
+                if ($clientIPv6 instanceof Address\IPv6) {
+                    $range = Subnet::fromString("{$checkIPv4}/{$ipv6CidrLength}");
+                    if ($range !== null && $range->contains($clientIPv6)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
      * Get the DNS resolver instance to be used for queries.
      */
-    protected function getResolver(): Resolver
+    protected function getDNSResolver(): Resolver
     {
         return $this->resolver;
+    }
+
+    protected function getPTRPointers(): array
+    {
+        if ($this->ptrPointers === null) {
+            $this->countDNSLookup();
+            $pointers = $this->getDNSResolver()->getPTRRecords($this->buildPTRQuery());
+            array_splice($pointers, static::MAX_DNS_LOOKUPS);
+            $this->ptrPointers = $pointers;
+        }
+
+        return $this->ptrPointers;
+    }
+
+    protected function buildPTRQuery(): string
+    {
+        $ip = $this->getEnvoronment()->getClientIP();
+        if ($ip instanceof Address\IPv4) {
+            return implode(
+                '.',
+                array_reverse($ip->getBytes())
+            ) . '.in-addr.arpa';
+        }
+        if ($ip instanceof Address\IPv6) {
+            return implode(
+                '.',
+                array_reverse(str_split(str_replace(':', '', $ip->toString(true)), 1))
+            ) . '.ip6.arpa';
+        }
+
+        throw new Exception\MissingEnvironmentValueException(Placeholder::ML_IP);
     }
 }

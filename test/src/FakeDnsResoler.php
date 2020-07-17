@@ -7,6 +7,7 @@ namespace SPFLib\Test;
 use IPLib\Address\AddressInterface;
 use IPLib\Factory;
 use SPFLib\DNS\Resolver;
+use Throwable;
 
 class FakeDnsResoler implements Resolver
 {
@@ -49,7 +50,7 @@ class FakeDnsResoler implements Resolver
      */
     public function setFakeTXTRecords(array $value): self
     {
-        $this->fakeTXTRecords = $value;
+        $this->fakeTXTRecords = array_change_key_case($value);
 
         return $this;
     }
@@ -61,7 +62,12 @@ class FakeDnsResoler implements Resolver
      */
     public function getTXTRecords(string $domain): array
     {
-        return $this->fakeTXTRecords[$domain] ?? [];
+        $result = $this->fakeTXTRecords[strtolower($domain)] ?? [];
+        if ($result instanceof Throwable) {
+            throw $result;
+        }
+
+        return $result;
     }
 
     /**
@@ -69,7 +75,7 @@ class FakeDnsResoler implements Resolver
      */
     public function setFakeForwardLookups(array $value): self
     {
-        $this->fakeForwardLookups = $value;
+        $this->fakeForwardLookups = array_change_key_case($value);
 
         return $this;
     }
@@ -81,8 +87,12 @@ class FakeDnsResoler implements Resolver
      */
     public function getIPAddressesFromDomainName(string $domain): array
     {
+        $items = $this->fakeForwardLookups[strtolower($domain)] ?? [];
+        if ($items instanceof Throwable) {
+            throw $items;
+        }
         $result = [];
-        foreach ($this->fakeForwardLookups[$domain] ?? [] as $ip) {
+        foreach ($items as $ip) {
             $result[] = Factory::addressFromString($ip);
         }
 
@@ -94,7 +104,7 @@ class FakeDnsResoler implements Resolver
      */
     public function setFakeMXRecords(array $value): self
     {
-        $this->fakeMXRecords = $value;
+        $this->fakeMXRecords = array_change_key_case($value);
 
         return $this;
     }
@@ -106,7 +116,12 @@ class FakeDnsResoler implements Resolver
      */
     public function getMXRecords(string $domain): array
     {
-        return $this->fakeMXRecords[$domain] ?? [];
+        $result = $this->fakeMXRecords[strtolower($domain)] ?? [];
+        if ($result instanceof Throwable) {
+            throw $result;
+        }
+
+        return $result;
     }
 
     /**
@@ -114,7 +129,7 @@ class FakeDnsResoler implements Resolver
      */
     public function setFakePTRRecords(array $value): self
     {
-        $this->fakePTRRecords = $value;
+        $this->fakePTRRecords = array_change_key_case($value);
 
         return $this;
     }
@@ -124,9 +139,14 @@ class FakeDnsResoler implements Resolver
      *
      * @see \SPFLib\DNS\Resolver::getPTRRecords()
      */
-    public function getPTRRecords(AddressInterface $ip): array
+    public function getPTRRecords(string $domain): array
     {
-        return $this->fakePTRRecords[(string) $ip] ?? [];
+        $result = $this->fakePTRRecords[$domain] ?? [];
+        if ($result instanceof Throwable) {
+            throw $result;
+        }
+
+        return $result;
     }
 
     /**
@@ -134,7 +154,7 @@ class FakeDnsResoler implements Resolver
      */
     public function setFakeReverseLookups(array $value): self
     {
-        $this->fakeReverseLookups = $value;
+        $this->fakeReverseLookups = array_change_key_case($value);
 
         return $this;
     }
@@ -146,6 +166,14 @@ class FakeDnsResoler implements Resolver
      */
     public function getDomainNameFromIPAddress(AddressInterface $ip): string
     {
-        return $this->fakeReverseLookups[(string) $ip] ?? '';
+        $result = $this->fakeReverseLookups[(string) $ip] ?? [];
+        if ($result instanceof Throwable) {
+            throw $result;
+        }
+        if ($result === []) {
+            return '';
+        }
+
+        return $result;
     }
 }

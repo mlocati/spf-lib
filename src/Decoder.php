@@ -338,19 +338,18 @@ class Decoder
         $domainSpec = null;
         $ip4CidrLength = null;
         $ip6CidrLength = null;
+        $matches = null;
+        if (preg_match('_^:(.*?)((?://?\d+)*)$_', $data, $matches)) {
+            $domainSpecString = $matches[1];
+            if ($domainSpecString === '') {
+                return null;
+            }
+            $domainSpec = $this->getMacroStringDecoder()->decode($domainSpecString);
+            $data = $matches[2];
+        }
         if ($data !== '') {
             $slashPosition = strpos($data, '/');
-            if ($data[0] === ':') {
-                if ($slashPosition === false) {
-                    $domainSpecString = substr($data, 1);
-                } else {
-                    $domainSpecString = substr($data, 1, $slashPosition - 1);
-                }
-                if ($domainSpecString === '') {
-                    return null;
-                }
-                $domainSpec = $this->getMacroStringDecoder()->decode($domainSpecString);
-            } elseif ($slashPosition !== 0) {
+            if ($slashPosition !== 0) {
                 return null;
             }
             if ($slashPosition !== false) {
@@ -385,6 +384,14 @@ class Decoder
      */
     protected function parseModifier(string $handle, string $data): ?Modifier
     {
+        try {
+            $term = $this->parseTerm($data);
+        } catch (Exception $soFarSoGood) {
+            $term = null;
+        }
+        if ($term !== null && !$term instanceof Modifier\UnknownModifier) {
+            throw new Exception\InvalidMacroStringException("{$handle}={$data}", 0, 'The modifier "{$handle}" as a value that indicates that the syntax is probably wrong');
+        }
         switch (strtolower($handle)) {
             case Modifier\RedirectModifier::HANDLE:
                 return $this->parseRedirectModifier($data);
@@ -419,7 +426,7 @@ class Decoder
         }
 
         return new Modifier\ExpModifier(
-            $this->getMacroStringDecoder()->decode($data, MacroStringDecoder::FLAG_EXP)
+            $this->getMacroStringDecoder()->decode($data)
         );
     }
 

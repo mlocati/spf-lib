@@ -36,7 +36,7 @@ class ExpModifier extends Modifier
     public function __construct($domainSpec)
     {
         if (!$domainSpec instanceof MacroString || $domainSpec->isEmpty()) {
-            $domainSpec = MacroString\Decoder::getInstance()->decode($domainSpec, MacroString\Decoder::FLAG_EXP);
+            $domainSpec = MacroString\Decoder::getInstance()->decode($domainSpec);
         }
         $this->domainSpec = $domainSpec;
     }
