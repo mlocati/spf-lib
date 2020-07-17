@@ -431,7 +431,7 @@ class Checker
             }
         }
 
-        return  false;
+        return false;
     }
 
     /**

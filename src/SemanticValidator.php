@@ -188,7 +188,7 @@ class SemanticValidator
                             $result[] = new Issue(
                                 $record,
                                 Issue::CODE_SHOULD_AVOID_VALIDATED_DOMAIN_MACRO,
-                                "The term '{$term}' contains macro-letter '{$chunk->getMacroLetter()}' that shouldn't be used because it's slow, resource intensive, and not very reliable",
+                                "The term '{$term}' contains the macro-letter '{$chunk->getMacroLetter()}' that shouldn't be used because it's slow, resource intensive, and not very reliable",
                                 Issue::LEVEL_NOTICE
                             );
                         }
