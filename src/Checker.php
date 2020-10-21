@@ -367,7 +367,7 @@ class Checker
         foreach ($mxRecords as $mxRecord) {
             $mxRecordIP = Factory::addressFromString($mxRecord);
             if ($mxRecordIP !== null) {
-                if ($this->matchIP($mxRecordIP, $mechanism->getIp4CidrLength(), $mechanism->getIp6CidrLength())) {
+                if ($state->matchIP($mxRecordIP, $mechanism->getIp4CidrLength(), $mechanism->getIp6CidrLength())) {
                     return true;
                 }
             } else {
