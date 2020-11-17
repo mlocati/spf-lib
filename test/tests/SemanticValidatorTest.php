@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
 use SPFLib\Decoder;
 use SPFLib\Semantic\Issue;
 use SPFLib\SemanticValidator;
+use SPFLib\Test\TestCase;
 
 class SemanticValidatorTest extends TestCase
 {
@@ -212,9 +212,9 @@ class SemanticValidatorTest extends TestCase
             $this->assertInstanceOf(Issue::class, $issue);
             $this->assertSame($record, $issue->getRecord());
             $this->assertContains($issue->getCode(), $issueCodes);
-            $this->assertRegExp('/^\[(notice|warning|fatal)\] ./', (string) $issue);
+            $this->assertRegularExpression('/^\[(notice|warning|fatal)\] ./', (string) $issue);
             if ($minimumLevel === Issue::LEVEL_FATAL) {
-                $this->assertRegExp('/^\[fatal\] ./', (string) $issue);
+                $this->assertRegularExpression('/^\[fatal\] ./', (string) $issue);
             }
         }
     }

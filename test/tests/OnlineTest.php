@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
 use SPFLib\Check\Environment;
 use SPFLib\Check\Result;
 use SPFLib\Checker;
 use SPFLib\Decoder;
 use SPFLib\Exception\DNSResolutionException;
+use SPFLib\Test\TestCase;
 
 class OnlineTest extends TestCase
 {

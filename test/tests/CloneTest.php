@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
 use SPFLib\Decoder;
 use SPFLib\Term\Modifier;
+use SPFLib\Test\TestCase;
 
 class CloneTest extends TestCase
 {

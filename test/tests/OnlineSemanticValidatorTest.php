@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
 use SPFLib\Decoder;
 use SPFLib\OnlineSemanticValidator;
 use SPFLib\Record;
 use SPFLib\Semantic\Issue;
 use SPFLib\Semantic\OnlineIssue;
 use SPFLib\Test\FakeDnsResoler;
+use SPFLib\Test\TestCase;
 
 class OnlineSemanticValidatorTest extends TestCase
 {
@@ -250,9 +250,9 @@ class OnlineSemanticValidatorTest extends TestCase
         foreach ($issues as $issue) {
             $this->assertInstanceOf(OnlineIssue::class, $issue);
             $this->assertContains($issue->getCode(), $expectedIssueCodes);
-            $this->assertRegExp('/^\[(notice|warning|fatal)\] ./', (string) $issue);
+            $this->assertRegularExpression('/^\[(notice|warning|fatal)\] ./', (string) $issue);
             if ($minimumLevel === Issue::LEVEL_FATAL) {
-                $this->assertRegExp('/^\[fatal\] ./', (string) $issue);
+                $this->assertRegularExpression('/^\[fatal\] ./', (string) $issue);
             }
         }
     }

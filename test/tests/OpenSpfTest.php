@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
 use SPFLib\Check\Environment;
 use SPFLib\Checker;
 use SPFLib\Test\OpenSPF\TestSuite\CaseData;
 use SPFLib\Test\OpenSPF\TestSuite\CaseList;
 use SPFLib\Test\OpenSPF\TestSuite\CasesGenerator;
+use SPFLib\Test\TestCase;
 
 class OpenSpfTest extends TestCase
 {
