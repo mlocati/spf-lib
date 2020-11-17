@@ -19,6 +19,28 @@ use SPFLib\Term\TermWithDomainSpec;
 class SemanticValidator
 {
     /**
+     * The handles of the mechanisms that involve DNS lookups.
+     *
+     * @var string[]
+     */
+    public const MECHANISMS_INVOLVING_DNS_LOOKUPS = [
+        Mechanism\IncludeMechanism::HANDLE,
+        Mechanism\AMechanism::HANDLE,
+        Mechanism\MxMechanism::HANDLE,
+        Mechanism\PtrMechanism::HANDLE,
+        Mechanism\ExistsMechanism::HANDLE,
+    ];
+
+    /**
+     * The handles of the modifiers that involve DNS lookups.
+     *
+     * @var string[]
+     */
+    public const MODIFIERS_INVOLVING_DNS_LOOKUPS = [
+        Modifier\RedirectModifier::HANDLE,
+    ];
+
+    /**
      * Get all the semantical warnings of an SPF record.
      *
      * @param \SPFLib\Record $record the record to be checked
@@ -53,33 +75,33 @@ class SemanticValidator
     }
 
     /**
+     * Calculate the number of DNS lookups caused by a record, without counting the lookups in the included/redirected-to domains.
+     */
+    public function getDirectDNSLookups(Record $record): int
+    {
+        $count = 0;
+        foreach ($record->getMechanisms() as $mechanism) {
+            if (in_array($mechanism->getName(), static::MECHANISMS_INVOLVING_DNS_LOOKUPS, true)) {
+                $count++;
+            }
+        }
+        foreach ($record->getModifiers() as $modifier) {
+            if (in_array($modifier->getName(), static::MODIFIERS_INVOLVING_DNS_LOOKUPS, true)) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
      * @return \SPFLib\Semantic\Issue[]
      *
      * @see https://tools.ietf.org/html/rfc7208#section-4.6.4
      */
     protected function checkMaxDNSLookups(Record $record): array
     {
-        $mechanisms = [
-            Mechanism\IncludeMechanism::HANDLE,
-            Mechanism\AMechanism::HANDLE,
-            Mechanism\MxMechanism::HANDLE,
-            Mechanism\PtrMechanism::HANDLE,
-            Mechanism\ExistsMechanism::HANDLE,
-        ];
-        $modifiers = [
-            Modifier\RedirectModifier::HANDLE,
-        ];
-        $count = 0;
-        foreach ($record->getMechanisms() as $mechanism) {
-            if (in_array($mechanism->getName(), $mechanisms, true)) {
-                $count++;
-            }
-        }
-        foreach ($record->getModifiers() as $modifier) {
-            if (in_array($modifier->getName(), $modifiers, true)) {
-                $count++;
-            }
-        }
+        $count = $this->getDirectDNSLookups($record);
         $maxQueries = State::MAX_DNS_LOOKUPS;
         if ($count <= $maxQueries) {
             return [];
@@ -89,7 +111,7 @@ class SemanticValidator
             new Issue(
                 $record,
                 Issue::CODE_TOO_MANY_DNS_LOOKUPS,
-                "The total number of the '" . implode("', '", $mechanisms) . "' mechanisms and the '" . implode("', '", $modifiers) . "' modifiers is {$count} (it should not exceed {$maxQueries})",
+                "The total number of the '" . implode("', '", static::MECHANISMS_INVOLVING_DNS_LOOKUPS) . "' mechanisms and the '" . implode("', '", static::MODIFIERS_INVOLVING_DNS_LOOKUPS) . "' modifiers is {$count} (it should not exceed {$maxQueries})",
                 Issue::LEVEL_WARNING
             ),
         ];

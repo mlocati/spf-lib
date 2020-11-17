@@ -19,7 +19,7 @@ AFAIK this is the only PHP library that passes the [Open SPF Test Suite for RFC 
 
 Here's a very simplified short description of the purpose of the SPF protocol.
 
-When an email client contacts an email server in order to delivery an email message, the email server has these informations:
+When an email client contacts an email server in order to delivery an email message, the email server has this information:
 
 1. the IP address of the email client that is sending the email
 2. the domain that the email client specified at the beginning of the SMTP delivery (after the `HELO`/`EHLO` SMTP command)
@@ -27,7 +27,7 @@ When an email client contacts an email server in order to delivery an email mess
 
 The email server can use the SPF protocol to determine if the client is allowed or not to send email addresses with the specified domains (the `HELO`/`EHLO` domain and/or the domain after the `@` in the `MAIL FROM` email address).
 
-This is done by quering the SPF DNS records of the domain(s) being checked, which can tell the server if the client is allowed/non allowed/probably not allowed to send the email.
+This is done by querying the SPF DNS records of the domain(s) being checked, which can tell the server if the client is allowed/non-allowed/probably not allowed to send the email.
 
 You can use this PHP library to build, validate and check the SPF records.
 
@@ -189,6 +189,23 @@ Output:
 
 Please note that every item in the array returned by the `validate` method is an instance of the [`SPFLib\Semantic\Issue`](https://github.com/mlocati/spf-lib/blob/master/src/Semantic/Issue.php) class.
 
+### Checking problems with an SPF record in real world
+
+The `SemanticValidator` only look for issues in an SPF record, without inspecting include (or redirected-to) records.
+
+In order to check an SPF record and all the referenced records you can use the `OnlineSemanticValidator`:
+
+```php
+$validator = new \SPFLib\OnlineSemanticValidator();
+// Check an online domain
+$issues = $validator->validateDomain('example.org');
+// Check a raw SPF record
+$issues = $validator->validateRawRecord('v=spf1 include:_sfp.example.org -all');
+// Check an SPFLib\Record instance ($record in this case)
+$issues = $validator->validateRecord($record);
+```
+
+The result of these methods are arrays of `SPFLib\Semantic\OnlineIssue` instances, which are very similar to the `SPFLib\Semantic\Issue` instances returned by the offline `SemanticValidator`.
 
 ## Do you want to really say thank you?
 
