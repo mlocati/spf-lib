@@ -91,4 +91,20 @@ class MacroString
     {
         return $this->getChunks() === [];
     }
+
+    /**
+     * Check if this instance contains some placeholders.
+     *
+     * @return bool
+     */
+    public function containsPlaceholders(): bool
+    {
+        foreach ($this->getChunks() as $chunk) {
+            if ($chunk instanceof Chunk\Placeholder) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
