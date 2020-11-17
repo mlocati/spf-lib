@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
 use SPFLib\DNS\StandardResolver;
 use SPFLib\Exception\DNSResolutionException;
+use SPFLib\Test\TestCase;
 
 class DNSResolverTest extends TestCase
 {

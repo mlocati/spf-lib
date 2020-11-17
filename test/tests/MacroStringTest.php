@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
 use SPFLib\Check\Environment;
 use SPFLib\Check\State;
 use SPFLib\Exception;
@@ -12,6 +11,7 @@ use SPFLib\Macro\MacroString\Chunk\Placeholder;
 use SPFLib\Macro\MacroString\Decoder;
 use SPFLib\Macro\MacroString\Expander;
 use SPFLib\Test\FakeDnsResoler;
+use SPFLib\Test\TestCase;
 
 class PlaceholderExpansionTest extends TestCase
 {
@@ -333,7 +333,7 @@ class PlaceholderExpansionTest extends TestCase
         $this->assertEquals($expectedMacroString, $macroString);
         $actualResult = self::$expander->expand($macroString, $domain, $state);
         if ($isRegex) {
-            $this->assertRegExp($expectedResult, $actualResult);
+            $this->assertRegularExpression($expectedResult, $actualResult);
         } else {
             $this->assertSame($expectedResult, $actualResult);
         }

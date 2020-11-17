@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use IPLib\Factory;
-use PHPUnit\Framework\TestCase;
 use SPFLib\Check\Environment;
 use SPFLib\Exception\InvalidIPAddressException;
+use SPFLib\Test\TestCase;
 
 class EnvironmentTest extends TestCase
 {

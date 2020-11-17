@@ -13,13 +13,14 @@ jobs:
     strategy:
       matrix:
         operating-system:
-          - ubuntu-latest
+          - ubuntu-20.04
           - macos-latest
           - windows-latest
         php-version:
           - '7.2'
           - '7.3'
           - '7.4'
+          - '8.0'
     name: PHP ${{ matrix.php-version }} on ${{ matrix.operating-system }}
     runs-on: ${{ matrix.operating-system }}
     if: "!startsWith(github.event.head_commit.message, '[skip ci]')"
@@ -29,21 +30,23 @@ jobs:
         with:
           php-version: ${{ matrix.php-version }}
           extensions: 'mbstring, openssl, zip'
-          tools: 'composer:v1'
+          tools: 'composer:v2'
       - name: Checkout
         uses: actions/checkout@v2
         with:
           fetch-depth: 1
+      - name: Avoid installing PHP-CS-Fixer
+        run: composer remove --dev --no-update --ansi --no-interaction friendsofphp/php-cs-fixer
       - name: Install dependencies
-        run: composer install --no-progress --no-suggest --optimize-autoloader --ansi --no-interaction
+        run: composer update --no-progress --optimize-autoloader --ansi --no-interaction
       - name: Perform tests
-        if: matrix.operating-system != 'ubuntu-latest' || matrix.php-version != '7.2'
+        if: matrix.operating-system != 'ubuntu-20.04' || matrix.php-version != '7.2'
         run: composer run-script test -- --verbose --do-not-cache-result
       - name: Perform tests (with code coverage)
-        if: matrix.operating-system == 'ubuntu-latest' && matrix.php-version == '7.2'
+        if: matrix.operating-system == 'ubuntu-20.04' && matrix.php-version == '7.2'
         run: composer run-script test -- --verbose --do-not-cache-result --coverage-clover code-coverage.xml
       - name: Upload code coverage
-        if: matrix.operating-system == 'ubuntu-latest' && matrix.php-version == '7.2'
+        if: matrix.operating-system == 'ubuntu-20.04' && matrix.php-version == '7.2'
         uses: codecov/codecov-action@v1
         with:
           file: code-coverage.xml

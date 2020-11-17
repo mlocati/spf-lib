@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
 use SPFLib\Check\Environment;
 use SPFLib\Check\Result;
 use SPFLib\Checker;
 use SPFLib\DNS\Resolver;
 use SPFLib\Term\Mechanism;
 use SPFLib\Test\FakeDnsResoler;
+use SPFLib\Test\TestCase;
 
 class CheckerTest extends TestCase
 {
@@ -288,6 +288,6 @@ class CheckerTest extends TestCase
         } else {
             $this->assertInstanceOf($expectedMatchedMechanismClass, $actualResult->getMatchedMechanism());
         }
-        $this->assertRegExp($expectedMessagesRegex, implode("\n", $actualResult->getMessages()));
+        $this->assertRegularExpression($expectedMessagesRegex, implode("\n", $actualResult->getMessages()));
     }
 }

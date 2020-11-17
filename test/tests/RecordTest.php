@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use IPLib\Address\IPv4;
 use IPLib\Address\IPv6;
-use PHPUnit\Framework\TestCase;
 use SPFLib\Decoder;
 use SPFLib\Record;
 use SPFLib\Term\Mechanism;
 use SPFLib\Term\Modifier;
+use SPFLib\Test\TestCase;
 
 class RecordTest extends TestCase
 {
