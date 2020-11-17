@@ -29,9 +29,11 @@ class OnlineTest extends TestCase
         try {
             $record = $decoder->getRecordFromDomain($domain);
         } catch (DNSResolutionException $x) {
-            $this->markTestSkipped($x->getMessage());
+            $this->markTestSkipped("Error downloading the SPF record for {$domain}: {$x->getMessage()}");
         }
-        $this->assertNotNull($record);
+        if ($record === null) {
+            $this->markTestSkipped("No SPF record downloaded for {$domain}");
+        }
         $checker = new Checker();
         $result = $checker->check(new Environment('0.0.0.0', 'example.com'));
         $this->assertSame(Result::CODE_FAIL, $result->getCode());
