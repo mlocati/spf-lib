@@ -10,6 +10,8 @@ on:
 
 jobs:
   test:
+    env:
+      CODE_COVERAGE: none
     strategy:
       matrix:
         operating-system:
@@ -17,6 +19,7 @@ jobs:
           - macos-latest
           - windows-latest
         php-version:
+          - '7.1'
           - '7.2'
           - '7.3'
           - '7.4'
@@ -25,12 +28,16 @@ jobs:
     runs-on: ${{ matrix.operating-system }}
     if: "!startsWith(github.event.head_commit.message, '[skip ci]')"
     steps:
+      - name: Enable code coverage
+        if: matrix.operating-system == 'ubuntu-20.04' && matrix.php-version == '7.2'
+        run: echo "CODE_COVERAGE=xdebug" >> $GITHUB_ENV
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
           extensions: 'mbstring, openssl, zip'
           tools: 'composer:v2'
+          coverage: ${{ env.CODE_COVERAGE }}
       - name: Checkout
         uses: actions/checkout@v2
         with:
@@ -40,13 +47,13 @@ jobs:
       - name: Install dependencies
         run: composer update --no-progress --optimize-autoloader --ansi --no-interaction
       - name: Perform tests
-        if: matrix.operating-system != 'ubuntu-20.04' || matrix.php-version != '7.2'
-        run: composer run-script test -- --verbose --do-not-cache-result
+        if: env.CODE_COVERAGE == 'none'
+        run: composer run-script test -- --verbose
       - name: Perform tests (with code coverage)
-        if: matrix.operating-system == 'ubuntu-20.04' && matrix.php-version == '7.2'
+        if: env.CODE_COVERAGE != 'none'
         run: composer run-script test -- --verbose --do-not-cache-result --coverage-clover code-coverage.xml
       - name: Upload code coverage
-        if: matrix.operating-system == 'ubuntu-20.04' && matrix.php-version == '7.2'
+        if: env.CODE_COVERAGE != 'none'
         uses: codecov/codecov-action@v1
         with:
           file: code-coverage.xml
