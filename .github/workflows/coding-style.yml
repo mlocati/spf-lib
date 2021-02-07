@@ -23,7 +23,8 @@ jobs:
         with:
           php-version: '7.2'
           extensions: 'mbstring, openssl, zip'
-          tools: 'composer:v1'
+          tools: 'composer:v2'
+          coverage: none
       - name: Install dependencies
         run: composer install --no-progress --no-suggest --optimize-autoloader --ansi --no-interaction
       - name: Check
