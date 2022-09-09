@@ -18,7 +18,7 @@ class HeloDomainState extends State
      */
     public function getSender(): string
     {
-        $domain = $this->getEnvoronment()->getHeloDomain();
+        $domain = $this->getEnvironment()->getHeloDomain();
 
         return $domain === '' ? '' : "postmaster@{$domain}";
     }

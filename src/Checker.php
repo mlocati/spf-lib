@@ -420,11 +420,11 @@ class Checker
         $targetDomain = $this->expandDomainSpec($state, $domain, $mechanism->getDomainSpec(), false);
         $state->countDNSLookup();
         foreach ($this->getDNSResolver()->getIPAddressesFromDomainName($targetDomain) as $ip) {
-            if ($state->getEnvoronment()->getClientIP() instanceof Address\IPv4) {
+            if ($state->getEnvironment()->getClientIP() instanceof Address\IPv4) {
                 if ($ip instanceof Address\IPv4) {
                     return true;
                 }
-            } elseif ($state->getEnvoronment()->getClientIP() instanceof Address\IPv6) {
+            } elseif ($state->getEnvironment()->getClientIP() instanceof Address\IPv6) {
                 if ($ip instanceof Address\IPv4) {
                     return true;
                 }

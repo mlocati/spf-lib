@@ -100,7 +100,7 @@ class Expander
                 $value = $currentDomain;
                 break;
             case Chunk\Placeholder::ML_IP:
-                $ip = $state->getEnvoronment()->getClientIP();
+                $ip = $state->getEnvironment()->getClientIP();
                 if ($ip !== null) {
                     if ($ip instanceof Address\IPv6) {
                         $value = implode('.', str_split(str_replace(':', '', $ip->toString(true)), 1));
@@ -116,7 +116,7 @@ class Expander
                 }
                 break;
             case Chunk\Placeholder::ML_IP_TYPE:
-                $ip = $state->getEnvoronment()->getClientIP();
+                $ip = $state->getEnvironment()->getClientIP();
                 if ($ip === null) {
                     throw new Exception\MissingEnvironmentValueException(Chunk\Placeholder::ML_IP);
                 }
@@ -127,17 +127,17 @@ class Expander
                 }
                 break;
             case Chunk\Placeholder::ML_HELO_DOMAIN:
-                $value = $state->getEnvoronment()->getHeloDomain();
+                $value = $state->getEnvironment()->getHeloDomain();
                 break;
             case Chunk\Placeholder::ML_SMTP_CLIENT_IP:
-                $ip = $state->getEnvoronment()->getClientIP();
+                $ip = $state->getEnvironment()->getClientIP();
                 if ($ip === null) {
                     throw new Exception\MissingEnvironmentValueException(Chunk\Placeholder::ML_IP);
                 }
                 $value = (string) $ip;
                 break;
             case Chunk\Placeholder::ML_CHECKER_DOMAIN:
-                $value = $state->getEnvoronment()->getCheckerDomain();
+                $value = $state->getEnvironment()->getCheckerDomain();
                 break;
             case Chunk\Placeholder::ML_CURRENT_TIMESTAMP:
                 $value = (string) time();
