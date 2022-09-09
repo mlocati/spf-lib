@@ -101,7 +101,7 @@ abstract class State
      *
      * @return \SPFLib\Check\Environment
      */
-    public function getEnvoronment(): Environment
+    public function getEnvironment(): Environment
     {
         return $this->environment;
     }
@@ -148,7 +148,7 @@ abstract class State
      */
     public function getClientIPDomain(): string
     {
-        $ip = $this->getEnvoronment()->getClientIP();
+        $ip = $this->getEnvironment()->getClientIP();
         if ($ip === null) {
             return '';
         }
@@ -249,7 +249,7 @@ abstract class State
 
     public function matchIP(AddressInterface $check, ?int $ipv4CidrLength, ?int $ipv6CidrLength): bool
     {
-        $clientIP = $this->getEnvoronment()->getClientIP();
+        $clientIP = $this->getEnvironment()->getClientIP();
         if ($ipv4CidrLength === 0) {
             if ($clientIP instanceof Address\IPv4 && $check instanceof Address\IPv4) {
                 return true;
@@ -287,6 +287,15 @@ abstract class State
     }
 
     /**
+     * @deprecated since version 3.1.2
+     * @see \SPFLib\Check\State::getEnvironment()
+     */
+    public function getEnvoronment(): Environment
+    {
+        return $this->getEnvironment();
+    }
+
+    /**
      * Get the DNS resolver instance to be used for queries.
      */
     protected function getDNSResolver(): Resolver
@@ -308,7 +317,7 @@ abstract class State
 
     protected function buildPTRQuery(): string
     {
-        $ip = $this->getEnvoronment()->getClientIP();
+        $ip = $this->getEnvironment()->getClientIP();
         if ($ip instanceof Address\IPv4) {
             return implode(
                 '.',
