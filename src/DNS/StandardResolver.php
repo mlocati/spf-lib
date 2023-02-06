@@ -32,6 +32,12 @@ class StandardResolver implements Resolver
         }
         $result = [];
         foreach ($records as $record) {
+            if(!empty($record['entries'])) {
+                foreach ($record['entries'] as $entry){
+                    $result[] = $entry;
+                }
+                continue;
+            }
             if (isset($record['txt'])) {
                 $result[] = $record['txt'];
             }
