@@ -15,6 +15,8 @@ The implementation is based on [RFC 7208](https://tools.ietf.org/html/rfc7208).
 
 AFAIK this is the only PHP library that passes the [Open SPF Test Suite for RFC 7208](http://www.open-spf.org/Test_Suite/).
 
+This library supports any PHP from PHP 7.1 to 8.3.
+
 ## Short introduction about SPF
 
 Here's a very simplified short description of the purpose of the SPF protocol.

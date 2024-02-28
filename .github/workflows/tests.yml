@@ -24,6 +24,9 @@ jobs:
           - '7.3'
           - '7.4'
           - '8.0'
+          - '8.1'
+          - '8.2'
+          - '8.3'
     name: PHP ${{ matrix.php-version }} on ${{ matrix.operating-system }}
     runs-on: ${{ matrix.operating-system }}
     if: "!startsWith(github.event.head_commit.message, '[skip ci]')"
