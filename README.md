@@ -193,7 +193,7 @@ Please note that every item in the array returned by the `validate` method is an
 
 ### Checking problems with an SPF record in real world
 
-The `SemanticValidator` only look for issues in an SPF record, without inspecting include (or redirected-to) records.
+The `SemanticValidator` only looks for issues in an SPF record, without inspecting include (or redirected-to) records.
 
 In order to check an SPF record and all the referenced records you can use the `OnlineSemanticValidator`:
 
@@ -208,6 +208,29 @@ $issues = $validator->validateRecord($record);
 ```
 
 The result of these methods are arrays of `SPFLib\Semantic\OnlineIssue` instances, which are very similar to the `SPFLib\Semantic\Issue` instances returned by the offline `SemanticValidator`.
+
+### Dealing with too many DNS lookups
+
+When the validation returns an issue of type `SPFLib\Semantic\OnlineIssueTooManyDNSLookups`, you can get more details from the instance:
+
+```php
+// Get the total amount of DNS lookups referenced in the SPF record
+$totalDnsLookups = $issue->getTotalLookupCount();
+// Get a recursive list of referenced DNS lookups
+$lookups = $issue->getDnsLookups();
+```
+
+You can also explicitly retrieve a list of DNS lookups for a SPF record by calling the relevant methods of `OnlineSemanticValidator`:
+
+```php
+$validator = new \SPFLib\OnlineSemanticValidator();
+// Get the DNS lookups for an online domain
+$lookups = $validator->getLookupsForDomain('example.org');
+// Get the DNS lookups for a raw SPF record
+$lookups = $validator->getLookupsForRawRecord('v=spf1 include:_sfp.example.org -all');
+// Get the DNS lookups for an SPFLib\Record instance ($record in this case)
+$lookups = $validator->getLookupsForRecord($record);
+```
 
 ## Do you want to really say thank you?
 
