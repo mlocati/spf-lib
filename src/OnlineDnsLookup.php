@@ -10,7 +10,9 @@ namespace SPFLib;
 class OnlineDnsLookup
 {
     private string $name;
+
     private ?string $record;
+
     private array $references = [];
 
     public function __construct(string $name, ?string $record = null)
@@ -34,7 +36,7 @@ class OnlineDnsLookup
      *
      * @param OnlineDnsLookup $reference
      */
-    public function addReference(OnlineDnsLookup $reference): void
+    public function addReference(self $reference): void
     {
         $this->references[] = $reference;
     }

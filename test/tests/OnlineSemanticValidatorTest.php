@@ -249,11 +249,11 @@ class OnlineSemanticValidatorTest extends TestCase
         return [
             [
                 '',
-                0
+                0,
             ],
             [
                 'test.example.org',
-                0
+                0,
             ],
             [
                 'test.example.org',

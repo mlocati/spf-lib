@@ -116,6 +116,7 @@ class OnlineSemanticValidator
         if ($record) {
             return $this->getLookupsForRecord($record, $domain);
         }
+
         return [];
     }
 
@@ -133,9 +134,9 @@ class OnlineSemanticValidator
         $this->validateRecursive($domain, $record, $state);
         if (isset($state['subRecordsDNSLookups'])) {
             return $state['subRecordsDNSLookups'];
-        } else {
-            return [];
         }
+
+        return [];
     }
 
     protected function validate(string $domain, ?Record $record): array
