@@ -9,11 +9,20 @@ namespace SPFLib;
  */
 class OnlineDnsLookup
 {
-    private string $name;
+    /**
+     * @var string
+     */
+    private $name;
 
-    private ?string $record;
+    /**
+     * @var string|null
+     */
+    private $record;
 
-    private array $references = [];
+    /**
+     * @var array<self>
+     */
+    private $references = [];
 
     public function __construct(string $name, ?string $record = null)
     {
@@ -34,7 +43,7 @@ class OnlineDnsLookup
     /**
      * Add a recursive reference that is included within this lookup's record.
      *
-     * @param OnlineDnsLookup $reference
+     * @param self $reference
      */
     public function addReference(self $reference): void
     {

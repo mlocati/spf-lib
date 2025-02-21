@@ -12,7 +12,7 @@ class OnlineIssueTooManyDNSLookups extends OnlineIssue
     /**
      * @var array<OnlineDnsLookup>
      */
-    private array $dnsLookups;
+    private $dnsLookups;
 
     /**
      * Initialize the instance.
