@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-namespace SPFLib\Semantic;
+namespace SPFLib\Semantic\OnlineIssue;
 
 use SPFLib\OnlineDnsLookup;
 use SPFLib\Record;
+use SPFLib\Semantic\OnlineIssue;
 
-class OnlineIssueTooManyDNSLookups extends OnlineIssue
+class TooManyDNSLookups extends OnlineIssue
 {
     /**
      * @var array<OnlineDnsLookup>

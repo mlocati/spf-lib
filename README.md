@@ -211,7 +211,7 @@ The result of these methods are arrays of `SPFLib\Semantic\OnlineIssue` instance
 
 ### Dealing with too many DNS lookups
 
-When the validation returns an issue of type `SPFLib\Semantic\OnlineIssueTooManyDNSLookups`, you can get more details from the instance:
+When the validation returns an issue of type `SPFLib\Semantic\OnlineIssue\TooManyDNSLookups`, you can get more details from the instance:
 
 ```php
 // Get the total amount of DNS lookups referenced in the SPF record

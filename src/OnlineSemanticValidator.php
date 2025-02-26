@@ -6,7 +6,7 @@ namespace SPFLib;
 
 use SPFLib\Check\State;
 use SPFLib\Semantic\OnlineIssue;
-use SPFLib\Semantic\OnlineIssueTooManyDNSLookups;
+use SPFLib\Semantic\OnlineIssue\TooManyDNSLookups;
 use SPFLib\Term\Mechanism;
 use SPFLib\Term\Modifier;
 
@@ -241,7 +241,7 @@ class OnlineSemanticValidator
             $totalDNSLookupCount = $state['subRecordsDNSLookupCount'];
             $maxQueries = State::MAX_DNS_LOOKUPS;
             if ($totalDNSLookupCount > $maxQueries) {
-                $result[] = new OnlineIssueTooManyDNSLookups(
+                $result[] = new TooManyDNSLookups(
                     $state['subRecordsDNSLookups'],
                     $domain,
                     '',
