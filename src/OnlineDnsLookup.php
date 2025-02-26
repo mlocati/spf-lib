@@ -35,7 +35,7 @@ class OnlineDnsLookup
         return $this->name;
     }
 
-    public function getRecord(): string
+    public function getRecord(): ?string
     {
         return $this->record;
     }
