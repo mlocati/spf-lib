@@ -130,8 +130,8 @@ class OnlineSemanticValidator
      */
     public function getLookupsForRecord(?Record $record, string $domain = ''): array
     {
-        $state = ['subRecordsDNSLookupCount' => 0, 'dnsLookupCount' => 0, 'parentParsedDomains' => []];
-        $this->validateRecursive($domain, $record, $state);
+        $state = [];
+        $this->validate($domain, $record, $state);
         if (isset($state['subRecordsDNSLookups'])) {
             return $state['subRecordsDNSLookups'];
         }
@@ -139,30 +139,23 @@ class OnlineSemanticValidator
         return [];
     }
 
-    protected function validate(string $domain, ?Record $record): array
+    protected function validate(string $domain, ?Record $record, ?array &$state = null): array
     {
-        $state = ['subRecordsDNSLookupCount' => 0, 'dnsLookupCount' => 0, 'parentParsedDomains' => []];
-        $issues = $this->validateRecursive($domain, $record, $state);
-
-        $totalDNSLookupCount = $state['subRecordsDNSLookupCount'];
-        $maxQueries = State::MAX_DNS_LOOKUPS;
-        if ($state['subRecordsDNSLookupCount'] > $maxQueries) {
-            $issues[] = new OnlineIssueTooManyDNSLookups(
-                $state['subRecordsDNSLookups'],
-                $domain,
-                '',
-                $record,
-                OnlineIssue::CODE_TOO_MANY_DNS_LOOKUPS_ONLINE,
-                "The total number of the '" . implode("', '", $this->getSemanticValidator()::MECHANISMS_INVOLVING_DNS_LOOKUPS) . "' mechanisms and the '" . implode("', '", $this->getSemanticValidator()::MODIFIERS_INVOLVING_DNS_LOOKUPS) . "' modifiers is {$totalDNSLookupCount} (it should not exceed {$maxQueries})",
-                OnlineIssue::LEVEL_WARNING
-            );
+        if ($state === null) {
+            $isTopLevel = true;
+            $state = [];
+        } else {
+            $isTopLevel = false;
         }
-
-        return $issues;
-    }
-
-    protected function validateRecursive(string $domain, ?Record $record, array &$state): array
-    {
+        if (!isset($state['subRecordsDNSLookupCount'])) {
+            $state['subRecordsDNSLookupCount'] = 0;
+        }
+        if (!isset($state['dnsLookupCount'])) {
+            $state['dnsLookupCount'] = 0;
+        }
+        if (!isset($state['parentParsedDomains'])) {
+            $state['parentParsedDomains'] = [];
+        }
         $state['record'] = $record;
         $state['subRecordsDNSLookups'] = [];
         if ($record === null) {
@@ -200,7 +193,7 @@ class OnlineSemanticValidator
                         $result[] = new OnlineIssue($domain, '', $record, OnlineIssue::CODE_DOMAIN_WITH_PLACEHOLDER, "The mechanism {$mechanism} includes a placeholder: its SPF record has not been parsed.", OnlineIssue::LEVEL_NOTICE);
                         $dnsLookup = null;
                     } else {
-                        $result = array_merge($result, $this->validateRecursive((string) $mechanism->getDomainSpec(), null, $state));
+                        $result = array_merge($result, $this->validate((string) $mechanism->getDomainSpec(), null, $state));
                         $lookupRecord = isset($state['record']) ? (string) $state['record'] : null;
                         $dnsLookup = new OnlineDnsLookup((string) $mechanism, $lookupRecord);
                         foreach ($state['subRecordsDNSLookups'] as $subRecordsDNSLookup) {
@@ -223,7 +216,7 @@ class OnlineSemanticValidator
                         $result[] = new OnlineIssue($domain, '', $record, OnlineIssue::CODE_DOMAIN_WITH_PLACEHOLDER, "The modifier {$modifier} includes a placeholder: its SPF record has not been parsed.", OnlineIssue::LEVEL_NOTICE);
                         $dnsLookup = null;
                     } else {
-                        $result = array_merge($result, $this->validateRecursive((string) $modifier->getDomainSpec(), null, $state));
+                        $result = array_merge($result, $this->validate((string) $modifier->getDomainSpec(), null, $state));
                         $lookupRecord = isset($state['record']) ? (string) $state['record'] : null;
                         $dnsLookup = new OnlineDnsLookup((string) $modifier, $lookupRecord);
                         foreach ($state['subRecordsDNSLookups'] as $subRecordsDNSLookup) {
@@ -243,6 +236,22 @@ class OnlineSemanticValidator
         $state['dnsLookupCount'] = $thisDNSLookupCount;
         $state['subRecordsDNSLookups'] = $subRecordsDNSLookups;
         $state['record'] = $record;
+
+        if ($isTopLevel) {
+            $totalDNSLookupCount = $state['subRecordsDNSLookupCount'];
+            $maxQueries = State::MAX_DNS_LOOKUPS;
+            if ($totalDNSLookupCount > $maxQueries) {
+                $result[] = new OnlineIssueTooManyDNSLookups(
+                    $state['subRecordsDNSLookups'],
+                    $domain,
+                    '',
+                    $record,
+                    OnlineIssue::CODE_TOO_MANY_DNS_LOOKUPS_ONLINE,
+                    "The total number of the '" . implode("', '", $this->getSemanticValidator()::MECHANISMS_INVOLVING_DNS_LOOKUPS) . "' mechanisms and the '" . implode("', '", $this->getSemanticValidator()::MODIFIERS_INVOLVING_DNS_LOOKUPS) . "' modifiers is {$totalDNSLookupCount} (it should not exceed {$maxQueries})",
+                    OnlineIssue::LEVEL_WARNING
+                );
+            }
+        }
 
         return $result;
     }
