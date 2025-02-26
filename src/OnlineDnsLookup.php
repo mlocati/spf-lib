@@ -67,7 +67,7 @@ class OnlineDnsLookup
      */
     public function getLookupCount(): int
     {
-        return array_reduce($this->references, function ($total, $reference) {
+        return array_reduce($this->references, static function ($total, $reference) {
             return $total + $reference->getLookupCount();
         }, 1);
     }

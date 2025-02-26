@@ -50,7 +50,7 @@ class TooManyDNSLookups extends OnlineIssue
      */
     public function getTotalLookupCount(): int
     {
-        return array_reduce($this->dnsLookups, function ($total, $dnsLookup) {
+        return array_reduce($this->dnsLookups, static function ($total, $dnsLookup) {
             return $total + $dnsLookup->getLookupCount();
         }, 0);
     }

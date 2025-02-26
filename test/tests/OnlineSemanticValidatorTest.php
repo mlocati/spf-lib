@@ -317,7 +317,7 @@ class OnlineSemanticValidatorTest extends TestCase
     {
         self::$resolver->setFakeTXTRecords($txtRecords);
         $lookups = self::$validator->getLookupsForDomain($domain);
-        $this->assertSame($expectedLookups, array_reduce($lookups, function ($total, $lookup) {
+        $this->assertSame($expectedLookups, array_reduce($lookups, static function ($total, $lookup) {
             return $total + $lookup->getLookupCount();
         }, 0));
     }
@@ -360,7 +360,7 @@ class OnlineSemanticValidatorTest extends TestCase
     {
         self::$resolver->setFakeTXTRecords($txtRecords);
         $lookups = self::$validator->getLookupsForRawRecord($rawRecord, $domain);
-        $this->assertSame($expectedLookups, array_reduce($lookups, function ($total, $lookup) {
+        $this->assertSame($expectedLookups, array_reduce($lookups, static function ($total, $lookup) {
             return $total + $lookup->getLookupCount();
         }, 0));
     }
