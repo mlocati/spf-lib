@@ -1,5 +1,5 @@
 [![Tests](https://github.com/mlocati/spf-lib/workflows/Tests/badge.svg)](https://github.com/mlocati/spf-lib/actions?query=workflow%3A%22Tests%22)
-[![Code Coverage](https://codecov.io/gh/mlocati/spf-lib/branch/master/graph/badge.svg)](https://codecov.io/gh/mlocati/spf-lib)
+[![Code Coverage](https://codecov.io/gh/mlocati/spf-lib/branch/main/graph/badge.svg)](https://codecov.io/gh/mlocati/spf-lib)
 
 
 # SPF (Sender Policy Framework) Library
@@ -125,9 +125,9 @@ foreach ($record->getModifiers() as $modifiers) {
 
 Please note that:
 
-- all [mechanisms](https://github.com/mlocati/spf-lib/tree/master/src/Term/Mechanism) extend the [`SPFLib\Term\Mechanism`](https://github.com/mlocati/spf-lib/blob/master/src/Term/Mechanism.php) abstract class.
-- all [modifiers](https://github.com/mlocati/spf-lib/tree/master/src/Term/Modifier) extend the [`SPFLib\Term\Modifier`](https://github.com/mlocati/spf-lib/blob/master/src/Term/Modifier.php) abstract class.
-- both mechanisms and modifiers implement the [`SPFLib\Term`](https://github.com/mlocati/spf-lib/blob/master/src/Term.php) interface.
+- all [mechanisms](https://github.com/mlocati/spf-lib/tree/main/src/Term/Mechanism) extend the [`SPFLib\Term\Mechanism`](https://github.com/mlocati/spf-lib/blob/main/src/Term/Mechanism.php) abstract class.
+- all [modifiers](https://github.com/mlocati/spf-lib/tree/main/src/Term/Modifier) extend the [`SPFLib\Term\Modifier`](https://github.com/mlocati/spf-lib/blob/main/src/Term/Modifier.php) abstract class.
+- both mechanisms and modifiers implement the [`SPFLib\Term`](https://github.com/mlocati/spf-lib/blob/main/src/Term.php) interface.
 
 ### Decoding the SPF record from the value of a TXT DNS record
 
@@ -189,7 +189,7 @@ Output:
 [notice] The 'include=example3.org' modifier is unknown
 ```
 
-Please note that every item in the array returned by the `validate` method is an instance of the [`SPFLib\Semantic\Issue`](https://github.com/mlocati/spf-lib/blob/master/src/Semantic/Issue.php) class.
+Please note that every item in the array returned by the `validate` method is an instance of the [`SPFLib\Semantic\Issue`](https://github.com/mlocati/spf-lib/blob/main/src/Semantic/Issue.php) class.
 
 ### Checking problems with an SPF record in real world
 
