@@ -244,6 +244,127 @@ class OnlineSemanticValidatorTest extends TestCase
         $this->checkIssues($issues, $expectedIssueCodes, $minimumLevel);
     }
 
+    public function feedGetLookupsForDomainCases(): array
+    {
+        return [
+            [
+                '',
+                0,
+            ],
+            [
+                'test.example.org',
+                0,
+            ],
+            [
+                'test.example.org',
+                0,
+                ['test.example.org' => ['v=spf1 mal formed!']],
+            ],
+            [
+                'test1.example.org',
+                4,
+                [
+                    'test1.example.org' => ['v=spf1 include:test2.example.org include:test3.example.org -all'],
+                    'test2.example.org' => ['v=spf1 include:test4.example.org -all'],
+                    'test3.example.org' => ['v=spf1 include:test4.example.org -all'],
+                    'test4.example.org' => ['v=spf1 -all'],
+                ],
+            ],
+            [
+                'test.example.org',
+                0,
+                ['test.example.org' => ['v=spf1 include:_spf.%{d2} -all']],
+            ],
+            [
+                'test1.example.org',
+                11,
+                [
+                    'test1.example.org' => ['v=spf1 mx a include:test2.example.org include:test6.example.org include:test7.example.org ip4:1.2.3.4 ~all'],
+                    'test2.example.org' => ['v=spf1 ip4:1.2.3.4 include:test3.example.org ~all'],
+                    'test3.example.org' => ['v=spf1 ip4:1.2.3.4 include:test4.example.org ~all'],
+                    'test4.example.org' => ['v=spf1 ip4:1.2.3.4 include:test5.example.org ~all'],
+                    'test5.example.org' => ['v=spf1 ip4:1.2.3.4 ~all'],
+                    'test6.example.org' => ['v=spf1 ip4:1.2.3.4 ~all'],
+                    'test7.example.org' => ['v=spf1 include:test8.example.org include:test9.example.org include:test10.example.org ~all'],
+                    'test8.example.org' => ['v=spf1 ip4:1.2.3.4 ~all'],
+                    'test9.example.org' => ['v=spf1 ~all'],
+                    'test10.example.org' => ['v=spf1 ip4:1.2.3.4 ~all'],
+                ],
+            ],
+            [
+                'test1.example.org',
+                10,
+                [
+                    'test1.example.org' => ['v=spf1 a include:test2.example.org include:test6.example.org include:test7.example.org ip4:1.2.3.4 ~all'],
+                    'test2.example.org' => ['v=spf1 ip4:1.2.3.4 include:test3.example.org ~all'],
+                    'test3.example.org' => ['v=spf1 ip4:1.2.3.4 include:test4.example.org ~all'],
+                    'test4.example.org' => ['v=spf1 ip4:1.2.3.4 include:test5.example.org ~all'],
+                    'test5.example.org' => ['v=spf1 ip4:1.2.3.4 ~all'],
+                    'test6.example.org' => ['v=spf1 ip4:1.2.3.4 ~all'],
+                    'test7.example.org' => ['v=spf1 include:test8.example.org include:test9.example.org include:test10.example.org ~all'],
+                    'test8.example.org' => ['v=spf1 ip4:1.2.3.4 ~all'],
+                    'test9.example.org' => ['v=spf1 ip4:1.2.3.4 ~all'],
+                    'test10.example.org' => ['v=spf1 ip4:1.2.3.4 ~all'],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider feedGetLookupsForDomainCases
+     */
+    public function testGetLookupsForDomain(string $domain, int $expectedLookups, array $txtRecords = []): void
+    {
+        self::$resolver->setFakeTXTRecords($txtRecords);
+        $lookups = self::$validator->getLookupsForDomain($domain);
+        $this->assertSame($expectedLookups, array_reduce($lookups, static function ($total, $lookup) {
+            return $total + $lookup->getLookupCount();
+        }, 0));
+    }
+
+    public function feedGetLookupsForRawRecordCases(): array
+    {
+        return [
+            [
+                '', '',
+                0,
+            ],
+            [
+                'malformed', '',
+                0,
+            ],
+            [
+                'v=spf1 malformed', '',
+                0,
+            ],
+            [
+                'v=spf1 -all', '',
+                0,
+            ],
+            [
+                'v=spf1 include:test2.example.org include:test3.example.org -all', 'test1.example.org',
+                4,
+                [
+                    'test2.example.org' => ['v=spf1 include:test4.example.org -all'],
+                    'test3.example.org' => ['v=spf1 include:test4.example.org -all'],
+                    'test4.example.org' => ['v=spf1 -all'],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider feedGetLookupsForRawRecordCases
+     */
+    public function testGetLookupsForRawRecord(string $rawRecord, string $domain, int $expectedLookups, array $txtRecords = []): void
+    {
+        self::$resolver->setFakeTXTRecords($txtRecords);
+        $lookups = self::$validator->getLookupsForRawRecord($rawRecord, $domain);
+        $this->assertSame($expectedLookups, array_reduce($lookups, static function ($total, $lookup) {
+            return $total + $lookup->getLookupCount();
+        }, 0));
+    }
+
     private function checkIssues(array $issues, array $expectedIssueCodes, ?int $minimumLevel)
     {
         $this->assertSameSize($expectedIssueCodes, $issues);

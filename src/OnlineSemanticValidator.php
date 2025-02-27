@@ -6,6 +6,7 @@ namespace SPFLib;
 
 use SPFLib\Check\State;
 use SPFLib\Semantic\OnlineIssue;
+use SPFLib\Semantic\OnlineIssue\TooManyDNSLookups;
 use SPFLib\Term\Mechanism;
 use SPFLib\Term\Modifier;
 
@@ -85,14 +86,78 @@ class OnlineSemanticValidator
         return $this->filterLevel($this->validate($domain, $record), $minimumLevel);
     }
 
+    /**
+     * Get all the DNS lookups involved in the SPF record of a domain.
+     *
+     * @param string $domain the domain to be checked
+     *
+     * @return \SPFLib\OnlineDnsLookup[]
+     */
+    public function getLookupsForDomain(string $domain): array
+    {
+        return $this->getLookupsForRecord(null, $domain);
+    }
+
+    /**
+     * Get all the DNS lookups involved in a raw SPF record.
+     *
+     * @param string $txtRecord the raw SPF record to be checked
+     * @param string $domain the domain owning the $txtRecord SFP record
+     *
+     * @return \SPFLib\OnlineDnsLookup[]
+     */
+    public function getLookupsForRawRecord(string $txtRecord, string $domain = ''): array
+    {
+        try {
+            $record = $this->getDecoder()->getRecordFromTXT($txtRecord);
+        } catch (Exception $x) {
+            return [];
+        }
+        if ($record) {
+            return $this->getLookupsForRecord($record, $domain);
+        }
+
+        return [];
+    }
+
+    /**
+     * Get all the DNS lookups involved in a parsed SPF record.
+     *
+     * @param \SPFLib\Record|null $record the record to be checked
+     * @param string $domain the domain owning the $record SFP record
+     *
+     * @return \SPFLib\OnlineDnsLookup[]
+     */
+    public function getLookupsForRecord(?Record $record, string $domain = ''): array
+    {
+        $state = [];
+        $this->validate($domain, $record, $state);
+        if (isset($state['subRecordsDNSLookups'])) {
+            return $state['subRecordsDNSLookups'];
+        }
+
+        return [];
+    }
+
     protected function validate(string $domain, ?Record $record, ?array &$state = null): array
     {
         if ($state === null) {
             $isTopLevel = true;
-            $state = ['subRecordsDNSLookupCount' => 0, 'parentParsedDomains' => []];
+            $state = [];
         } else {
             $isTopLevel = false;
         }
+        if (!isset($state['subRecordsDNSLookupCount'])) {
+            $state['subRecordsDNSLookupCount'] = 0;
+        }
+        if (!isset($state['dnsLookupCount'])) {
+            $state['dnsLookupCount'] = 0;
+        }
+        if (!isset($state['parentParsedDomains'])) {
+            $state['parentParsedDomains'] = [];
+        }
+        $state['record'] = $record;
+        $state['subRecordsDNSLookups'] = [];
         if ($record === null) {
             if ($domain === '') {
                 return [new OnlineIssue($domain, '', null, OnlineIssue::CODE_NODOMAIN_NORECORD_PROVIDED, 'Neither a domain nor an SPF record has been provided.', OnlineIssue::LEVEL_FATAL)];
@@ -109,6 +174,7 @@ class OnlineSemanticValidator
                 return [new OnlineIssue($domain, '', null, OnlineIssue::CODE_RECORD_NOT_FOUND, "No SPF records found for domain {$domain}", OnlineIssue::LEVEL_FATAL)];
             }
         }
+        $subRecordsDNSLookups = [];
         $parentParsedDomains = $state['parentParsedDomains'];
         if ($domain !== '') {
             $state['parentParsedDomains'][] = $domain;
@@ -117,31 +183,66 @@ class OnlineSemanticValidator
         foreach ($this->getSemanticValidator()->validate($record, null) as $offlineIssue) {
             $result[] = OnlineIssue::fromOfflineIssue($offlineIssue, $domain);
         }
+
+        $thisDNSLookupCount = 0;
         foreach ($record->getMechanisms() as $mechanism) {
-            if ($mechanism instanceof Mechanism\IncludeMechanism) {
-                if ($mechanism->getDomainSpec()->containsPlaceholders()) {
-                    $result[] = new OnlineIssue($domain, '', $record, OnlineIssue::CODE_DOMAIN_WITH_PLACEHOLDER, "The mechanism {$mechanism} includes a placeholder: its SPF record has not been parsed.", OnlineIssue::LEVEL_NOTICE);
+            if (in_array($mechanism->getName(), SemanticValidator::MECHANISMS_INVOLVING_DNS_LOOKUPS, true)) {
+                $thisDNSLookupCount++;
+                if ($mechanism instanceof Mechanism\IncludeMechanism) {
+                    if ($mechanism->getDomainSpec()->containsPlaceholders()) {
+                        $result[] = new OnlineIssue($domain, '', $record, OnlineIssue::CODE_DOMAIN_WITH_PLACEHOLDER, "The mechanism {$mechanism} includes a placeholder: its SPF record has not been parsed.", OnlineIssue::LEVEL_NOTICE);
+                        $dnsLookup = null;
+                    } else {
+                        $result = array_merge($result, $this->validate((string) $mechanism->getDomainSpec(), null, $state));
+                        $lookupRecord = isset($state['record']) ? (string) $state['record'] : null;
+                        $dnsLookup = new OnlineDnsLookup((string) $mechanism, $lookupRecord);
+                        foreach ($state['subRecordsDNSLookups'] as $subRecordsDNSLookup) {
+                            $dnsLookup->addReference($subRecordsDNSLookup);
+                        }
+                    }
                 } else {
-                    $result = array_merge($result, $this->validate((string) $mechanism->getDomainSpec(), null, $state));
+                    $dnsLookup = new OnlineDnsLookup((string) $mechanism);
+                }
+                if ($dnsLookup) {
+                    $subRecordsDNSLookups[] = $dnsLookup;
                 }
             }
         }
         foreach ($record->getModifiers() as $modifier) {
-            if ($modifier instanceof Modifier\RedirectModifier) {
-                if ($modifier->getDomainSpec()->containsPlaceholders()) {
-                    $result[] = new OnlineIssue($domain, '', $record, OnlineIssue::CODE_DOMAIN_WITH_PLACEHOLDER, "The modifier {$modifier} includes a placeholder: its SPF record has not been parsed.", OnlineIssue::LEVEL_NOTICE);
+            if (in_array($modifier->getName(), SemanticValidator::MODIFIERS_INVOLVING_DNS_LOOKUPS, true)) {
+                $thisDNSLookupCount++;
+                if ($modifier instanceof Modifier\RedirectModifier) {
+                    if ($modifier->getDomainSpec()->containsPlaceholders()) {
+                        $result[] = new OnlineIssue($domain, '', $record, OnlineIssue::CODE_DOMAIN_WITH_PLACEHOLDER, "The modifier {$modifier} includes a placeholder: its SPF record has not been parsed.", OnlineIssue::LEVEL_NOTICE);
+                        $dnsLookup = null;
+                    } else {
+                        $result = array_merge($result, $this->validate((string) $modifier->getDomainSpec(), null, $state));
+                        $lookupRecord = isset($state['record']) ? (string) $state['record'] : null;
+                        $dnsLookup = new OnlineDnsLookup((string) $modifier, $lookupRecord);
+                        foreach ($state['subRecordsDNSLookups'] as $subRecordsDNSLookup) {
+                            $dnsLookup->addReference($subRecordsDNSLookup);
+                        }
+                    }
                 } else {
-                    $result = array_merge($result, $this->validate((string) $modifier->getDomainSpec(), null, $state));
+                    $dnsLookup = new OnlineDnsLookup((string) $modifier);
+                }
+                if ($dnsLookup) {
+                    $subRecordsDNSLookups[] = $dnsLookup;
                 }
             }
         }
         $state['parentParsedDomains'] = $parentParsedDomains;
-        $thisDNSLookupCount = $this->getSemanticValidator()->getDirectDNSLookups($record);
+        $state['subRecordsDNSLookupCount'] += $thisDNSLookupCount;
+        $state['dnsLookupCount'] = $thisDNSLookupCount;
+        $state['subRecordsDNSLookups'] = $subRecordsDNSLookups;
+        $state['record'] = $record;
+
         if ($isTopLevel) {
-            $totalDNSLookupCount = $state['subRecordsDNSLookupCount'] + $thisDNSLookupCount;
+            $totalDNSLookupCount = $state['subRecordsDNSLookupCount'];
             $maxQueries = State::MAX_DNS_LOOKUPS;
             if ($totalDNSLookupCount > $maxQueries) {
-                $result[] = new OnlineIssue(
+                $result[] = new TooManyDNSLookups(
+                    $state['subRecordsDNSLookups'],
                     $domain,
                     '',
                     $record,
@@ -150,8 +251,6 @@ class OnlineSemanticValidator
                     OnlineIssue::LEVEL_WARNING
                 );
             }
-        } else {
-            $state['subRecordsDNSLookupCount'] += $thisDNSLookupCount;
         }
 
         return $result;
