@@ -59,7 +59,7 @@ class OnlineDnsLookup
      */
     public function getReferences(): array
     {
-        return $this->references[0];
+        return $this->references;
     }
 
     /**
