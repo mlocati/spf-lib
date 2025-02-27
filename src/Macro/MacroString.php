@@ -84,8 +84,6 @@ class MacroString
 
     /**
      * Check if this instance has one or more chunk.
-     *
-     * @return bool
      */
     public function isEmpty(): bool
     {
@@ -94,8 +92,6 @@ class MacroString
 
     /**
      * Check if this instance contains some placeholders.
-     *
-     * @return bool
      */
     public function containsPlaceholders(): bool
     {

@@ -1,4 +1,6 @@
-/vendor/
-/.*
+/.php-cs-fixer.cache
+/.php-cs-fixer.php
+/.phpunit.result.cache
 /code-coverage.xml
 /composer.lock
+/vendor/

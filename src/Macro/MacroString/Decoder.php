@@ -109,12 +109,12 @@ class Decoder
                     $result->addChunk(new Chunk\LiteralString($currentLiteralString));
                     $currentLiteralString = '';
                 }
-                $result->addChunk(new Chunk\Placeholder($matches['macroLetter'], $numOutputParts, $matches['reverse'] !== '', $matches['delimiters']));
+                $result->addChunk(new Placeholder($matches['macroLetter'], $numOutputParts, $matches['reverse'] !== '', $matches['delimiters']));
                 $index += strlen($matches[0]);
                 continue;
             }
             $ord = ord($char);
-            if ($ord < $minLiteralAscii || $ord > 0x7e) {
+            if ($ord < $minLiteralAscii || $ord > 0x7E) {
                 throw new Exception\InvalidMacroStringException($string, $index, "The macro-string '{$string}' contains an invalid character (ASCII code: {$ord}) at the position {$index}");
             }
             $currentLiteralString .= $char;

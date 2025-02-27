@@ -303,7 +303,7 @@ class PlaceholderExpansionTest extends TestCase
             ],
             // 30
             [
-                chr(0x7e),
+                chr(0x7E),
                 [new LiteralString('~')],
                 $state,
                 $recordDomain,
@@ -322,8 +322,6 @@ class PlaceholderExpansionTest extends TestCase
 
     /**
      * @dataProvider provideValidPlaceholderCases
-     *
-     * @param mixed $decoderFlags
      */
     public function testValidPlaceholderCase(string $dnsMacroString, array $expectedPlaceholders, State $state, string $domain, string $expectedResult, bool $isRegex = false, $decoderFlags = Decoder::FLAG_EXP): void
     {
@@ -385,15 +383,15 @@ class PlaceholderExpansionTest extends TestCase
             [''],
             [chr(0x00)],
             [chr(0x10)],
-            [chr(0x1f)],
+            [chr(0x1F)],
             ["\n"],
             ["\r"],
             ["\t"],
             [' '],
-            [chr(0x7f)],
+            [chr(0x7F)],
             [chr(0x80)],
             [chr(0x81)],
-            [chr(0xff)],
+            [chr(0xFF)],
             ['%'],
             ['%%%'],
             ['%%%'],
@@ -428,7 +426,7 @@ class PlaceholderExpansionTest extends TestCase
 
     public function testDecoder(): void
     {
-        $spfDecoder = new \SPFLib\Decoder();
+        $spfDecoder = new SPFLib\Decoder();
         $this->expectException(Exception\InvalidMacroStringException::class);
         $spfDecoder->getRecordFromTXT('v=spf1 a:%(r))');
     }
