@@ -4,21 +4,20 @@ declare(strict_types=1);
 
 namespace SPFLib\Semantic\OnlineIssue;
 
-use SPFLib\OnlineDnsLookup;
 use SPFLib\Record;
 use SPFLib\Semantic\OnlineIssue;
 
 class TooManyDNSLookups extends OnlineIssue
 {
     /**
-     * @var array<OnlineDnsLookup>
+     * @var \SPFLib\OnlineDnsLookup[]
      */
     private $dnsLookups;
 
     /**
      * Initialize the instance.
      *
-     * @param string $dnsLookups the direct DNS lookups that are present in this record
+     * @param \SPFLib\OnlineDnsLookup[] $dnsLookups the direct DNS lookups that are present in this record
      */
     public function __construct(
         array $dnsLookups,
@@ -36,7 +35,7 @@ class TooManyDNSLookups extends OnlineIssue
     /**
      * Get all direct DNS lookups that are present in this record.
      *
-     * @return array<OnlineDnsLookup>
+     * @return \SPFLib\OnlineDnsLookup[]
      */
     public function getDnsLookups(): array
     {

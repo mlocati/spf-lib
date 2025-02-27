@@ -20,7 +20,7 @@ class OnlineDnsLookup
     private $record;
 
     /**
-     * @var array<self>
+     * @var \SPFLib\OnlineDnsLookup[]
      */
     private $references = [];
 
@@ -43,27 +43,27 @@ class OnlineDnsLookup
     /**
      * Add a recursive reference that is included within this lookup's record.
      *
-     * @param self $reference
+     * @return $this
      */
-    public function addReference(self $reference): void
+    public function addReference(self $reference): self
     {
         $this->references[] = $reference;
+
+        return $this;
     }
 
     /**
      * Get all recursive references that are included in this lookup's record.
      *
-     * @return array<self>
+     * @return \SPFLib\OnlineDnsLookup[]
      */
     public function getReferences(): array
     {
-        return $this->references;
+        return $this->references[0];
     }
 
     /**
      * Get the total amount of recursive references present in this lookup's record.
-     *
-     * @return int
      */
     public function getLookupCount(): int
     {

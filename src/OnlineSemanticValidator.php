@@ -91,7 +91,7 @@ class OnlineSemanticValidator
      *
      * @param string $domain the domain to be checked
      *
-     * @return array<OnlineDnsLookup>
+     * @return \SPFLib\OnlineDnsLookup[]
      */
     public function getLookupsForDomain(string $domain): array
     {
@@ -104,7 +104,7 @@ class OnlineSemanticValidator
      * @param string $txtRecord the raw SPF record to be checked
      * @param string $domain the domain owning the $txtRecord SFP record
      *
-     * @return array<OnlineDnsLookup>
+     * @return \SPFLib\OnlineDnsLookup[]
      */
     public function getLookupsForRawRecord(string $txtRecord, string $domain = ''): array
     {
@@ -126,7 +126,7 @@ class OnlineSemanticValidator
      * @param \SPFLib\Record|null $record the record to be checked
      * @param string $domain the domain owning the $record SFP record
      *
-     * @return array<OnlineDnsLookup>
+     * @return \SPFLib\OnlineDnsLookup[]
      */
     public function getLookupsForRecord(?Record $record, string $domain = ''): array
     {
