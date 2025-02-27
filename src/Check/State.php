@@ -98,8 +98,6 @@ abstract class State
 
     /**
      * Get the environment being checked.
-     *
-     * @return \SPFLib\Check\Environment
      */
     public function getEnvironment(): Environment
     {
@@ -108,8 +106,6 @@ abstract class State
 
     /**
      * Get the sender email address currently being checked.
-     *
-     * @return string
      */
     abstract public function getSender(): string;
 
@@ -165,7 +161,7 @@ abstract class State
     /**
      * Reset the number of DNS queries already performed.
      *
-     * @return self
+     * @return $this
      */
     public function resetDNSQueryCounters(): self
     {

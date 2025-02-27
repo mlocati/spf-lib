@@ -19,8 +19,6 @@ class Expander
      *
      * @throws \SPFLib\Exception\MissingEnvironmentValueException if $state is missing a value used one of the placeholders of the MacroString
      * @throws \SPFLib\Exception\TooManyDNSLookupsException if too many DNS queries have been performed
-     *
-     * @return string
      */
     public function expand(MacroString $macroString, string $currentDomain, State $state): string
     {

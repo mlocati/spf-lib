@@ -30,14 +30,14 @@ class IncludeMechanismException extends Exception
     /**
      * The "include" mechanism for which the exception has been thrown.
      *
-     * @var \SPFLib\Term\Mechanism\IncludeMechanism $mechanism
+     * @var \SPFLib\Term\Mechanism\IncludeMechanism
      */
     private $mechanism;
 
     /**
      * The problematic result of the "include" mechanism.
      *
-     * @var \SPFLib\Check\Result $includeResult
+     * @var \SPFLib\Check\Result
      */
     private $includeResult;
 

@@ -44,8 +44,6 @@ class TooManyDNSLookups extends OnlineIssue
 
     /**
      * Get the total amount of DNS lookups that are involved in this record.
-     *
-     * @return int
      */
     public function getTotalLookupCount(): int
     {

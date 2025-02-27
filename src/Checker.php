@@ -87,8 +87,6 @@ class Checker
      *
      * @param \SPFLib\Check\Environment $environment the environment instance holding all the environment values
      *
-     * @return \SPFLib\Check\Result
-     *
      * @see https://tools.ietf.org/html/rfc7208#section-2.3
      */
     public function check(Environment $environment, int $flags = self::FLAG_CHECK_HELODOMAIN | self::FLAG_CHECK_MAILFROADDRESS): Result
@@ -222,18 +220,19 @@ class Checker
                 return $result;
             }
         }
-        /** @see https://tools.ietf.org/html/rfc7208#section-4.7 */
+
+        // @see https://tools.ietf.org/html/rfc7208#section-4.7
         return Result::create(Result::CODE_NEUTRAL)->addMessage('No mechanism matched and no redirect modifier found.');
     }
 
-    protected function createHeloDomainCheckState(Environment $environment): Check\State
+    protected function createHeloDomainCheckState(Environment $environment): State
     {
-        return new Check\State\HeloDomainState($environment, $this->getDNSResolver());
+        return new State\HeloDomainState($environment, $this->getDNSResolver());
     }
 
-    protected function createMailFromCheckState(Environment $environment): Check\State
+    protected function createMailFromCheckState(Environment $environment): State
     {
-        return new Check\State\MailFromState($environment, $this->getDNSResolver());
+        return new State\MailFromState($environment, $this->getDNSResolver());
     }
 
     protected function getDNSResolver(): Resolver

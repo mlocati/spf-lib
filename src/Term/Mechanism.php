@@ -64,7 +64,7 @@ abstract class Mechanism implements Term
     /**
      * Get the qualifier of this mechanism (the value of one of the Mechanism::QUALIFIER_... constants).
      *
-     * @param bool $emptyIfInclude use true to return an empty string if the qualifier is QUALIFIER_PASS
+     * @param bool $emptyIfPass use true to return an empty string if the qualifier is QUALIFIER_PASS
      */
     public function getQualifier(bool $emptyIfPass = false): string
     {

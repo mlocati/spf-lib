@@ -1,4 +1,4 @@
-[![Tests](https://github.com/mlocati/spf-lib/workflows/Tests/badge.svg)](https://github.com/mlocati/spf-lib/actions?query=workflow%3A%22Tests%22)
+[![Checks](https://github.com/mlocati/spf-lib/workflows/Checks/badge.svg)](https://github.com/mlocati/spf-lib/actions?query=workflow%3A%22Checks%22)
 [![Code Coverage](https://codecov.io/gh/mlocati/spf-lib/branch/main/graph/badge.svg)](https://codecov.io/gh/mlocati/spf-lib)
 
 

@@ -268,7 +268,6 @@ class OnlineSemanticValidator
 
     /**
      * @param \SPFLib\Semantic\OnlineIssue[] $issues
-     * @param int|null $minimumLevel
      *
      * @return \SPFLib\Semantic\OnlineIssue[]
      */
