@@ -1,0 +1,13 @@
+codecov:
+  branch: main
+  notify:
+    after_n_builds: 1
+    wait_for_ci: false
+    require_ci_to_pass: false
+
+coverage:
+  status:
+    project:
+      default:
+        paths: 
+          - src/
