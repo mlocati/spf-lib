@@ -86,6 +86,7 @@ class Decoder
         if ($txtRecord === null) {
             return null;
         }
+
         return $this->getRecordFromTXT($txtRecord);
     }
 
