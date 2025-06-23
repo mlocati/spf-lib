@@ -40,6 +40,35 @@ class Decoder
     }
 
     /**
+     * Get the raw SPF TXT record associated to a domain.
+     *
+     * @throws \SPFLib\Exception\DNSResolutionException in case of DNS resolution errors
+     * @throws \SPFLib\Exception\MultipleSPFRecordsException if the domain has more that 1 SPF record
+     *
+     * @return string returns an empty string if no SPF TXT record has been found
+     *
+     * @see https://tools.ietf.org/html/rfc7208#section-4.5
+     */
+    public function getTXTRecordFromDomain(string $domain): string
+    {
+        $rawSpfRecords = [];
+        $txtRecords = $this->getDNSResolver()->getTXTRecords($domain);
+        foreach ($txtRecords as $txtRecord) {
+            if (strcasecmp($txtRecord, Record::PREFIX) === 0 || stripos($txtRecord, Record::PREFIX . ' ') === 0) {
+                $rawSpfRecords[] = $txtRecord;
+            }
+        }
+        switch (count($rawSpfRecords)) {
+            case 0:
+                return '';
+            case 1:
+                return $rawSpfRecords[0];
+            default:
+                throw new Exception\MultipleSPFRecordsException($domain, $rawSpfRecords);
+        }
+    }
+
+    /**
      * Extract the SPF record associated to a domain.
      *
      * @throws \SPFLib\Exception\DNSResolutionException in case of DNS resolution errors
@@ -53,21 +82,12 @@ class Decoder
      */
     public function getRecordFromDomain(string $domain): ?Record
     {
-        $rawSpfRecords = [];
-        $txtRecords = $this->getDNSResolver()->getTXTRecords($domain);
-        foreach ($txtRecords as $txtRecord) {
-            if (strcasecmp($txtRecord, Record::PREFIX) === 0 || stripos($txtRecord, Record::PREFIX . ' ') === 0) {
-                $rawSpfRecords[] = $txtRecord;
-            }
+        $txtRecord = $this->getTXTRecordFromDomain($domain);
+        if ($txtRecord === '') {
+            return null;
         }
-        switch (count($rawSpfRecords)) {
-            case 0:
-                return null;
-            case 1:
-                return $this->getRecordFromTXT($rawSpfRecords[0]);
-            default:
-                throw new Exception\MultipleSPFRecordsException($domain, $rawSpfRecords);
-        }
+
+        return $this->getRecordFromTXT($txtRecord);
     }
 
     /**
