@@ -45,11 +45,11 @@ class Decoder
      * @throws \SPFLib\Exception\DNSResolutionException in case of DNS resolution errors
      * @throws \SPFLib\Exception\MultipleSPFRecordsException if the domain has more that 1 SPF record
      *
-     * @return string|null return NULL if no SPF TXT record has been found
+     * @return string returns an empty string if no SPF TXT record has been found
      *
      * @see https://tools.ietf.org/html/rfc7208#section-4.5
      */
-    public function getTXTRecordFromDomain(string $domain): ?string
+    public function getTXTRecordFromDomain(string $domain): string
     {
         $rawSpfRecords = [];
         $txtRecords = $this->getDNSResolver()->getTXTRecords($domain);
@@ -60,7 +60,7 @@ class Decoder
         }
         switch (count($rawSpfRecords)) {
             case 0:
-                return null;
+                return '';
             case 1:
                 return $rawSpfRecords[0];
             default:
@@ -83,7 +83,7 @@ class Decoder
     public function getRecordFromDomain(string $domain): ?Record
     {
         $txtRecord = $this->getTXTRecordFromDomain($domain);
-        if ($txtRecord === null) {
+        if ($txtRecord === '') {
             return null;
         }
 
