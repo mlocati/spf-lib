@@ -33,7 +33,7 @@ class MultipleSPFRecordsException extends Exception
      */
     public function __construct(string $domain, array $records)
     {
-        parent::__construct("The domain {$domain} has more that one SPF record.");
+        parent::__construct("The domain {$domain} has more than one SPF record.");
         $this->domain = $domain;
         $this->records = $records;
     }
